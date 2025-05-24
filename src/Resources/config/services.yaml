@@ -1,0 +1,18 @@
+services:
+  # default configuration for services in *this* file
+  _defaults:
+    autowire: true      # Automatically injects dependencies in your services.
+    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+#  Tourze\OAuth2ServerBundle\EventSubscriber\:
+#    resource: '../../EventSubscriber/'
+
+  # 分页工具
+  Knp\Component\Pager\Paginator:
+    public: true
+  Knp\Component\Pager\PaginatorInterface:
+    alias: Knp\Component\Pager\Paginator
+    public: true
+  knp_paginator:
+    alias: Knp\Component\Pager\Paginator
+    public: true
