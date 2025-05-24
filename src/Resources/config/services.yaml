@@ -6,6 +6,8 @@ services:
 
   Tourze\OAuth2ServerBundle\Controller\:
     resource: '../../Controller/'
+  Tourze\OAuth2ServerBundle\DataFixtures\:
+    resource: '../../DataFixtures/'
   Tourze\OAuth2ServerBundle\Repository\:
     resource: '../../Repository/'
   Tourze\OAuth2ServerBundle\Service\:

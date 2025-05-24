@@ -234,7 +234,7 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
     /**
      * 获取平均响应时间
      */
-    public function getAverageResponseTime(string $endpoint = null, ?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): ?float
+    public function getAverageResponseTime(?string $endpoint = null, ?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): ?float
     {
         $qb = $this->createQueryBuilder('l')
             ->select('AVG(l.responseTime)')

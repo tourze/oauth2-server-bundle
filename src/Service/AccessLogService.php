@@ -271,7 +271,7 @@ class AccessLogService
     ): void {
         // 这里可以实现异步日志记录，如写入队列、消息总线等
         // 当前为同步实现，后续可以根据需要改为异步
-        
+
         $log = OAuth2AccessLog::create(
             endpoint: $endpoint,
             ipAddress: $logData['ip_address'],
