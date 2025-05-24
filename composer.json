@@ -10,8 +10,10 @@
     "doctrine/collections": "^2.3",
     "doctrine/dbal": "^4.0",
     "doctrine/doctrine-bundle": "^2.13",
+    "doctrine/doctrine-fixtures-bundle": "^4.0",
     "doctrine/orm": "^3.0",
     "doctrine/persistence": "^3.1 || ^4",
+    "easycorp/easyadmin-bundle": "^4",
     "symfony/config": "^6.4",
     "symfony/dependency-injection": "^6.4",
     "symfony/doctrine-bridge": "^6.4",
@@ -24,6 +26,7 @@
     "symfony/yaml": "^6.4 || ^7.1",
     "tourze/access-token-bundle": "0.0.*",
     "tourze/doctrine-indexed-bundle": "0.0.*",
+    "tourze/doctrine-resolve-target-entity-bundle": "0.0.*",
     "tourze/doctrine-timestamp-bundle": "0.0.*",
     "tourze/symfony-routing-auto-loader-bundle": "0.0.*"
   },
