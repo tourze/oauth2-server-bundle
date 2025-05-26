@@ -78,17 +78,6 @@ public function configureMenuItems(): iterable
 }
 ```
 
-### 权限控制
-
-可以通过 Symfony 的安全配置来控制访问权限：
-
-```yaml
-# config/packages/security.yaml
-security:
-    access_control:
-        - { path: ^/admin/oauth2, roles: ROLE_OAUTH2_ADMIN }
-```
-
 ### 自定义配置
 
 每个控制器都支持进一步的自定义：
