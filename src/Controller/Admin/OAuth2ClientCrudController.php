@@ -183,7 +183,7 @@ class OAuth2ClientCrudController extends AbstractCrudController
                 "客户端密钥已重新生成。新密钥: <strong>{$newSecret}</strong><br>" .
                 "<small class='text-warning'>请立即保存此密钥，系统不会再次显示明文密钥</small>"
             );
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->addFlash('danger', '密钥重新生成失败: ' . $e->getMessage());
         }
 
@@ -207,7 +207,7 @@ class OAuth2ClientCrudController extends AbstractCrudController
                 $this->clientService->enableClient($client);
                 $this->addFlash('success', '客户端已启用');
             }
-        } catch (\Throwable $e) {
+        } catch  (\Throwable $e) {
             $this->addFlash('danger', '状态切换失败: ' . $e->getMessage());
         }
 
