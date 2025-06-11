@@ -52,7 +52,7 @@ class OAuth2Controller extends AbstractController
         } catch (OAuth2Exception $e) {
             $this->logError('token', $request, $e, $startTime);
             return $this->createErrorResponse($e);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $oauth2Exception = OAuth2Exception::serverError('Internal server error');
             $this->logError('token', $request, $oauth2Exception, $startTime);
             return $this->createErrorResponse($oauth2Exception);
