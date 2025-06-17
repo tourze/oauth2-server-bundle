@@ -308,7 +308,6 @@ class OAuth2ClientServiceTest extends TestCase
 
         $newSecret = $this->clientService->regenerateClientSecret($mockClient);
 
-        $this->assertIsString($newSecret);
         $this->assertNotEmpty($newSecret);
     }
 

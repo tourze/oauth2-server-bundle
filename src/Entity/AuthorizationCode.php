@@ -6,7 +6,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
-use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
+use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
 
 /**
@@ -21,6 +21,7 @@ use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
 #[ORM\Index(name: 'idx_oauth2_auth_expires', columns: ['expires_at'])]
 class AuthorizationCode implements \Stringable
 {
+    use CreateTimeAware;
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
@@ -91,9 +92,6 @@ class AuthorizationCode implements \Stringable
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '状态参数'])]
     private ?string $state = null;
 
-    #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '创建时间'])]
-    private ?\DateTimeInterface $createTime = null;
 
     public function __toString(): string
     {
@@ -217,16 +215,6 @@ class AuthorizationCode implements \Stringable
         return $this;
     }
 
-    public function getCreateTime(): ?\DateTimeInterface
-    {
-        return $this->createTime;
-    }
-
-    public function setCreateTime(?\DateTimeInterface $createTime): static
-    {
-        $this->createTime = $createTime;
-        return $this;
-    }
 
     /**
      * 检查授权码是否过期

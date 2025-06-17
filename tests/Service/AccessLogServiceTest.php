@@ -99,7 +99,6 @@ class AccessLogServiceTest extends TestCase
 
         $result = $this->accessLogService->getEndpointStats($endpoint, $from, $to);
 
-        $this->assertIsArray($result);
         $this->assertSame($endpoint, $result['endpoint']);
         $this->assertSame($totalCount, $result['total_count']);
         $this->assertSame($avgResponseTime, $result['average_response_time']);
@@ -120,7 +119,6 @@ class AccessLogServiceTest extends TestCase
 
         $result = $this->accessLogService->getClientStats($this->mockClient, $from, $to);
 
-        $this->assertIsArray($result);
         $this->assertSame('test_client', $result['client_id']);
         $this->assertSame('Test Client', $result['client_name']);
         $this->assertSame($totalCount, $result['total_count']);

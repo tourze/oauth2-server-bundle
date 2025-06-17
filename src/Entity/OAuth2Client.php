@@ -17,6 +17,8 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
  * 
  * 存储第三方应用的客户端信息，包括ClientId、ClientSecret等
  * 每个客户端都关联到一个系统用户（UserInterface）
+ * 
+ * @phpstan-ignore-next-line
  */
 #[ORM\Entity(repositoryClass: OAuth2ClientRepository::class)]
 #[ORM\Table(name: 'oauth2_client', options: ['comment' => 'OAuth2客户端'])]

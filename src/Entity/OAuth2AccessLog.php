@@ -23,7 +23,7 @@ class OAuth2AccessLog
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private int $id;
+    private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 50)]
     private string $endpoint;
@@ -104,7 +104,7 @@ class OAuth2AccessLog
         return $log;
     }
 
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }

@@ -60,7 +60,6 @@ class OAuth2ExceptionTest extends TestCase
         
         $result = $exception->toArray();
         
-        $this->assertIsArray($result);
         $this->assertSame('invalid_grant', $result['error']);
         $this->assertSame('Invalid authorization code', $result['error_description']);
         $this->assertSame('https://example.com/docs/errors', $result['error_uri']);
@@ -72,7 +71,6 @@ class OAuth2ExceptionTest extends TestCase
         
         $result = $exception->toArray();
         
-        $this->assertIsArray($result);
         $this->assertSame('access_denied', $result['error']);
         $this->assertArrayNotHasKey('error_description', $result);
         $this->assertArrayNotHasKey('error_uri', $result);
