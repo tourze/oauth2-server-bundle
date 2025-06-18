@@ -27,9 +27,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $code = 'test_authorization_code';
-        
+
         $result = $authCode->setCode($code);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($code, $authCode->getCode());
     }
@@ -37,9 +37,9 @@ class AuthorizationCodeTest extends TestCase
     public function test_setClient_andGetClient(): void
     {
         $authCode = new AuthorizationCode();
-        
+
         $result = $authCode->setClient($this->mockClient);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($this->mockClient, $authCode->getClient());
     }
@@ -47,9 +47,9 @@ class AuthorizationCodeTest extends TestCase
     public function test_setUser_andGetUser(): void
     {
         $authCode = new AuthorizationCode();
-        
+
         $result = $authCode->setUser($this->mockUser);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($this->mockUser, $authCode->getUser());
     }
@@ -58,9 +58,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $uri = 'https://example.com/callback';
-        
+
         $result = $authCode->setRedirectUri($uri);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($uri, $authCode->getRedirectUri());
     }
@@ -69,9 +69,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $expiresAt = new \DateTime('+10 minutes');
-        
+
         $result = $authCode->setExpiresAt($expiresAt);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($expiresAt, $authCode->getExpiresAt());
     }
@@ -80,9 +80,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $scopes = ['read', 'write'];
-        
+
         $result = $authCode->setScopes($scopes);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($scopes, $authCode->getScopes());
     }
@@ -91,9 +91,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $challenge = 'test_challenge';
-        
+
         $result = $authCode->setCodeChallenge($challenge);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($challenge, $authCode->getCodeChallenge());
     }
@@ -102,9 +102,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $method = 'S256';
-        
+
         $result = $authCode->setCodeChallengeMethod($method);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($method, $authCode->getCodeChallengeMethod());
     }
@@ -112,11 +112,11 @@ class AuthorizationCodeTest extends TestCase
     public function test_setUsed_andIsUsed(): void
     {
         $authCode = new AuthorizationCode();
-        
+
         $this->assertFalse($authCode->isUsed());
-        
+
         $result = $authCode->setUsed(true);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertTrue($authCode->isUsed());
     }
@@ -125,9 +125,9 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $state = 'random_state_value';
-        
+
         $result = $authCode->setState($state);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($state, $authCode->getState());
     }
@@ -136,7 +136,7 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $authCode->setExpiresAt(new \DateTime('+10 minutes'));
-        
+
         $this->assertFalse($authCode->isExpired());
     }
 
@@ -144,7 +144,7 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $authCode->setExpiresAt(new \DateTime('-1 minute'));
-        
+
         $this->assertTrue($authCode->isExpired());
     }
 
@@ -153,7 +153,7 @@ class AuthorizationCodeTest extends TestCase
         $authCode = new AuthorizationCode();
         $authCode->setExpiresAt(new \DateTime('+10 minutes'));
         $authCode->setUsed(false);
-        
+
         $this->assertTrue($authCode->isValid());
     }
 
@@ -162,7 +162,7 @@ class AuthorizationCodeTest extends TestCase
         $authCode = new AuthorizationCode();
         $authCode->setExpiresAt(new \DateTime('-1 minute'));
         $authCode->setUsed(false);
-        
+
         $this->assertFalse($authCode->isValid());
     }
 
@@ -171,7 +171,7 @@ class AuthorizationCodeTest extends TestCase
         $authCode = new AuthorizationCode();
         $authCode->setExpiresAt(new \DateTime('+10 minutes'));
         $authCode->setUsed(true);
-        
+
         $this->assertFalse($authCode->isValid());
     }
 
@@ -179,7 +179,7 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $authCode->setCodeChallenge(null);
-        
+
         $this->assertTrue($authCode->verifyCodeVerifier('any_verifier'));
     }
 
@@ -189,7 +189,7 @@ class AuthorizationCodeTest extends TestCase
         $verifier = 'test_verifier';
         $authCode->setCodeChallenge($verifier);
         $authCode->setCodeChallengeMethod('plain');
-        
+
         $this->assertTrue($authCode->verifyCodeVerifier($verifier));
     }
 
@@ -198,7 +198,7 @@ class AuthorizationCodeTest extends TestCase
         $authCode = new AuthorizationCode();
         $authCode->setCodeChallenge('correct_verifier');
         $authCode->setCodeChallengeMethod('plain');
-        
+
         $this->assertFalse($authCode->verifyCodeVerifier('wrong_verifier'));
     }
 
@@ -206,14 +206,14 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $verifier = 'test_verifier_string';
-        
+
         // 生成正确的S256挑战
         $hash = hash('sha256', $verifier, true);
         $challenge = rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
-        
+
         $authCode->setCodeChallenge($challenge);
         $authCode->setCodeChallengeMethod('S256');
-        
+
         $this->assertTrue($authCode->verifyCodeVerifier($verifier));
     }
 
@@ -221,14 +221,14 @@ class AuthorizationCodeTest extends TestCase
     {
         $authCode = new AuthorizationCode();
         $correctVerifier = 'correct_verifier';
-        
+
         // 生成基于正确验证器的挑战
         $hash = hash('sha256', $correctVerifier, true);
         $challenge = rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
-        
+
         $authCode->setCodeChallenge($challenge);
         $authCode->setCodeChallengeMethod('S256');
-        
+
         $this->assertFalse($authCode->verifyCodeVerifier('wrong_verifier'));
     }
 
@@ -237,7 +237,7 @@ class AuthorizationCodeTest extends TestCase
         $authCode = new AuthorizationCode();
         $authCode->setCodeChallenge('test_challenge');
         $authCode->setCodeChallengeMethod('unsupported_method');
-        
+
         $this->assertFalse($authCode->verifyCodeVerifier('test_verifier'));
     }
 
@@ -248,7 +248,7 @@ class AuthorizationCodeTest extends TestCase
         $codeChallenge = 'test_challenge';
         $codeChallengeMethod = 'S256';
         $state = 'test_state';
-        
+
         $authCode = AuthorizationCode::create(
             $this->mockClient,
             $this->mockUser,
@@ -259,7 +259,7 @@ class AuthorizationCodeTest extends TestCase
             $codeChallengeMethod,
             $state
         );
-        
+
         $this->assertInstanceOf(AuthorizationCode::class, $authCode);
         $this->assertSame($this->mockClient, $authCode->getClient());
         $this->assertSame($this->mockUser, $authCode->getUser());
@@ -270,7 +270,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertSame($state, $authCode->getState());
         $this->assertNotEmpty($authCode->getCode());
         $this->assertFalse($authCode->isUsed());
-        
+
         // 验证过期时间大约在15分钟后
         $expectedExpiry = new \DateTime('+15 minutes');
         $actualExpiry = $authCode->getExpiresAt();
@@ -280,13 +280,13 @@ class AuthorizationCodeTest extends TestCase
     public function test_create_createsAuthCodeWithMinimalParameters(): void
     {
         $redirectUri = 'https://example.com/callback';
-        
+
         $authCode = AuthorizationCode::create(
             $this->mockClient,
             $this->mockUser,
             $redirectUri
         );
-        
+
         $this->assertInstanceOf(AuthorizationCode::class, $authCode);
         $this->assertSame($this->mockClient, $authCode->getClient());
         $this->assertSame($this->mockUser, $authCode->getUser());
@@ -296,7 +296,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertNull($authCode->getCodeChallengeMethod());
         $this->assertNull($authCode->getState());
         $this->assertNotEmpty($authCode->getCode());
-        
+
         // 验证默认过期时间为10分钟
         $expectedExpiry = new \DateTime('+10 minutes');
         $actualExpiry = $authCode->getExpiresAt();
@@ -310,13 +310,13 @@ class AuthorizationCodeTest extends TestCase
             $this->mockUser,
             'https://example.com/callback'
         );
-        
+
         $authCode2 = AuthorizationCode::create(
             $this->mockClient,
             $this->mockUser,
             'https://example.com/callback'
         );
-        
+
         $this->assertNotEquals($authCode1->getCode(), $authCode2->getCode());
     }
 
@@ -325,24 +325,24 @@ class AuthorizationCodeTest extends TestCase
         $authCode = new AuthorizationCode();
         $code = 'test_code_value';
         $authCode->setCode($code);
-        
-        $this->assertSame($code, (string) $authCode);
+
+        $this->assertSame($code, (string)$authCode);
     }
 
     public function test_toString_returnsEmptyStringWhenCodeEmpty(): void
     {
         $authCode = new AuthorizationCode();
-        
-        $this->assertSame('', (string) $authCode);
+
+        $this->assertSame('', (string)$authCode);
     }
 
     public function test_setCreateTime_andGetCreateTime(): void
     {
         $authCode = new AuthorizationCode();
-        $time = new \DateTime();
-        
+        $time = new \DateTimeImmutable();
+
         $result = $authCode->setCreateTime($time);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertSame($time, $authCode->getCreateTime());
     }
@@ -350,10 +350,10 @@ class AuthorizationCodeTest extends TestCase
     public function test_setCreateTime_withNull(): void
     {
         $authCode = new AuthorizationCode();
-        
+
         $result = $authCode->setCreateTime(null);
-        
+
         $this->assertSame($authCode, $result);
         $this->assertNull($authCode->getCreateTime());
     }
-} 
+}

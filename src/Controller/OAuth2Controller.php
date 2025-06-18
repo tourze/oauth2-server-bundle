@@ -73,7 +73,7 @@ class OAuth2Controller extends AbstractController
             $authRequest = $this->validateAuthorizationParameters($request);
             $client = $authRequest['client'];
 
-            if (!$user) {
+            if ($user === null) {
                 return $this->redirectToLogin($request);
             }
 
@@ -217,9 +217,9 @@ class OAuth2Controller extends AbstractController
 
         if (!$clientId || !$clientSecret) {
             $authorization = $request->headers->get('Authorization');
-            if ($authorization && str_starts_with($authorization, 'Basic ')) {
+            if ($authorization !== null && str_starts_with($authorization, 'Basic ')) {
                 $credentials = base64_decode(substr($authorization, 6));
-                if ($credentials && str_contains($credentials, ':')) {
+                if ($credentials !== false && str_contains($credentials, ':')) {
                     [$clientId, $clientSecret] = explode(':', $credentials, 2);
                 }
             }
@@ -281,7 +281,7 @@ class OAuth2Controller extends AbstractController
     private function redirectWithAuthorizationCode(string $redirectUri, string $code, ?string $state): Response
     {
         $params = ['code' => $code];
-        if ($state) {
+        if ($state !== null) {
             $params['state'] = $state;
         }
 
@@ -299,7 +299,7 @@ class OAuth2Controller extends AbstractController
             'error_description' => $errorDescription,
         ];
 
-        if ($state) {
+        if ($state !== null) {
             $params['state'] = $state;
         }
 
