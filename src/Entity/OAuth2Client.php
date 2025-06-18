@@ -10,6 +10,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
 use Tourze\DoctrineTimestampBundle\Attribute\CreateTimeColumn;
 use Tourze\DoctrineTimestampBundle\Attribute\UpdateTimeColumn;
+use Tourze\DoctrineTimestampBundle\Traits\TimestampableAware;
 use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
 
 /**
@@ -26,6 +27,7 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
 #[ORM\Index(name: 'idx_oauth2_client_user', columns: ['user_id'])]
 class OAuth2Client implements \Stringable
 {
+    use TimestampableAware;
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
@@ -119,14 +121,8 @@ class OAuth2Client implements \Stringable
     private Collection $authorizationCodes;
 
     #[CreateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '创建时间'])]
-    private ?\DateTimeInterface $createTime = null;
-
-    #[UpdateTimeColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '更新时间'])]
-    private ?\DateTimeInterface $updateTime = null;
-
-    public function __construct()
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '创建时间'])]#[UpdateTimeColumn]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true, options: ['comment' => '更新时间'])]public function __construct()
     {
         $this->authorizationCodes = new ArrayCollection();
     }
@@ -343,27 +339,4 @@ class OAuth2Client implements \Stringable
             }
         }
         return $this;
-    }
-
-    public function getCreateTime(): ?\DateTimeInterface
-    {
-        return $this->createTime;
-    }
-
-    public function setCreateTime(?\DateTimeInterface $createTime): static
-    {
-        $this->createTime = $createTime;
-        return $this;
-    }
-
-    public function getUpdateTime(): ?\DateTimeInterface
-    {
-        return $this->updateTime;
-    }
-
-    public function setUpdateTime(?\DateTimeInterface $updateTime): static
-    {
-        $this->updateTime = $updateTime;
-        return $this;
-    }
-}
+    }}
