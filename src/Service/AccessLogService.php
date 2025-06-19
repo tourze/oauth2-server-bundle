@@ -122,7 +122,7 @@ class AccessLogService
 
         foreach ($ipKeys as $key) {
             $ip = $request->server->get($key);
-            if ($ip && $this->isValidIp($ip)) {
+            if (!empty($ip) && $this->isValidIp($ip)) {
                 // 如果是逗号分隔的IP列表，取第一个
                 if (str_contains($ip, ',')) {
                     $ip = trim(explode(',', $ip)[0]);

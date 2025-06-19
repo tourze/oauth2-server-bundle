@@ -2,6 +2,7 @@
 
 namespace Tourze\OAuth2ServerBundle\Entity;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Tourze\OAuth2ServerBundle\Repository\OAuth2AccessLogRepository;
 
@@ -12,62 +13,62 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2AccessLogRepository;
  * 用于安全审计、异常检测和统计分析
  */
 #[ORM\Entity(repositoryClass: OAuth2AccessLogRepository::class)]
-#[ORM\Table(name: 'oauth2_access_log')]
+#[ORM\Table(name: 'oauth2_access_log', options: ['comment' => 'OAuth2访问日志'])]
 #[ORM\Index(name: 'idx_endpoint', columns: ['endpoint'])]
 #[ORM\Index(name: 'idx_client_id', columns: ['client_id'])]
 #[ORM\Index(name: 'idx_ip_address', columns: ['ip_address'])]
 #[ORM\Index(name: 'idx_created_at', columns: ['created_at'])]
 #[ORM\Index(name: 'idx_status', columns: ['status'])]
-class OAuth2AccessLog
+class OAuth2AccessLog implements \Stringable
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 50)]
+    #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '端点名称'])]
     private string $endpoint;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '客户端ID'])]
     private ?string $clientId = null;
 
     #[ORM\ManyToOne(targetEntity: OAuth2Client::class)]
     #[ORM\JoinColumn(name: 'oauth2_client_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?OAuth2Client $client = null;
 
-    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '用户ID'])]
     private ?string $userId = null;
 
-    #[ORM\Column(type: 'string', length: 45)]
+    #[ORM\Column(type: Types::STRING, length: 45, options: ['comment' => 'IP地址'])]
     private string $ipAddress;
 
-    #[ORM\Column(type: 'string', length: 500, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 500, nullable: true, options: ['comment' => '用户代理'])]
     private ?string $userAgent = null;
 
-    #[ORM\Column(type: 'string', length: 10)]
+    #[ORM\Column(type: Types::STRING, length: 10, options: ['comment' => 'HTTP方法'])]
     private string $method;
 
-    #[ORM\Column(type: 'json', nullable: true)]
+    #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '请求参数'])]
     private ?array $requestParams = null;
 
-    #[ORM\Column(type: 'string', length: 20)]
+    #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '状态'])]
     private string $status;
 
-    #[ORM\Column(type: 'string', length: 100, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '错误代码'])]
     private ?string $errorCode = null;
 
-    #[ORM\Column(type: 'text', nullable: true)]
+    #[ORM\Column(type: Types::TEXT, nullable: true, options: ['comment' => '错误消息'])]
     private ?string $errorMessage = null;
 
-    #[ORM\Column(type: 'integer', nullable: true)]
+    #[ORM\Column(type: Types::INTEGER, nullable: true, options: ['comment' => '响应时间(毫秒)'])]
     private ?int $responseTime = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private \DateTimeInterface $createdAt;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
+    private \DateTimeImmutable $createdAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTime();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     /**
@@ -241,12 +242,12 @@ class OAuth2AccessLog
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeInterface
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
+    public function setCreatedAt(\DateTimeImmutable $createdAt): self
     {
         $this->createdAt = $createdAt;
         return $this;
@@ -278,5 +279,10 @@ class OAuth2AccessLog
         }
 
         return $this->responseTime . 'ms';
+    }
+
+    public function __toString(): string
+    {
+        return "{$this->endpoint} [{$this->status}] {$this->ipAddress}";
     }
 }

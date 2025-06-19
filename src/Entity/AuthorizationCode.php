@@ -27,9 +27,6 @@ class AuthorizationCode implements \Stringable
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
     private ?int $id = null;
 
-    /**
-     * 授权码值
-     */
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 128, unique: true, options: ['comment' => '授权码'])]
     private string $code;
@@ -48,47 +45,26 @@ class AuthorizationCode implements \Stringable
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private UserInterface $user;
 
-    /**
-     * 重定向URI
-     */
     #[ORM\Column(type: Types::STRING, length: 2000, options: ['comment' => '重定向URI'])]
     private string $redirectUri;
 
-    /**
-     * 过期时间
-     */
     #[IndexColumn]
-    #[ORM\Column(type: Types::DATETIME_MUTABLE, options: ['comment' => '过期时间'])]
-    private \DateTimeInterface $expiresAt;
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '过期时间'])]
+    private \DateTimeImmutable $expiresAt;
 
-    /**
-     * 授权的作用域
-     */
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '授权作用域'])]
     private ?array $scopes = null;
 
-    /**
-     * PKCE代码挑战
-     */
     #[ORM\Column(type: Types::STRING, length: 128, nullable: true, options: ['comment' => 'PKCE代码挑战'])]
     private ?string $codeChallenge = null;
 
-    /**
-     * PKCE代码挑战方法
-     */
     #[ORM\Column(type: Types::STRING, length: 10, nullable: true, options: ['comment' => 'PKCE代码挑战方法'])]
     private ?string $codeChallengeMethod = null;
 
-    /**
-     * 是否已使用
-     */
     #[IndexColumn]
     #[ORM\Column(type: Types::BOOLEAN, options: ['comment' => '是否已使用', 'default' => false])]
     private bool $used = false;
 
-    /**
-     * 状态参数（用于防CSRF攻击）
-     */
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '状态参数'])]
     private ?string $state = null;
 
@@ -149,12 +125,12 @@ class AuthorizationCode implements \Stringable
         return $this;
     }
 
-    public function getExpiresAt(): \DateTimeInterface
+    public function getExpiresAt(): \DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
-    public function setExpiresAt(\DateTimeInterface $expiresAt): static
+    public function setExpiresAt(\DateTimeImmutable $expiresAt): static
     {
         $this->expiresAt = $expiresAt;
         return $this;
@@ -275,7 +251,7 @@ class AuthorizationCode implements \Stringable
         $authCode->setUser($user);
         $authCode->setRedirectUri($redirectUri);
         $authCode->setScopes($scopes);
-        $authCode->setExpiresAt(new \DateTime("+{$expiresInMinutes} minutes"));
+        $authCode->setExpiresAt(new \DateTimeImmutable("+{$expiresInMinutes} minutes"));
         $authCode->setCodeChallenge($codeChallenge);
         $authCode->setCodeChallengeMethod($codeChallengeMethod);
         $authCode->setState($state);

@@ -21,9 +21,9 @@ class OAuth2AccessLogTest extends TestCase
 
     public function test_constructor_setsCreatedAtToCurrentTime(): void
     {
-        $beforeCreation = new \DateTime();
+        $beforeCreation = new \DateTimeImmutable();
         $log = new OAuth2AccessLog();
-        $afterCreation = new \DateTime();
+        $afterCreation = new \DateTimeImmutable();
         
         $this->assertGreaterThanOrEqual($beforeCreation, $log->getCreatedAt());
         $this->assertLessThanOrEqual($afterCreation, $log->getCreatedAt());
@@ -163,7 +163,7 @@ class OAuth2AccessLogTest extends TestCase
     public function test_setCreatedAt_andGetCreatedAt(): void
     {
         $log = new OAuth2AccessLog();
-        $dateTime = new \DateTime('2023-01-01 12:00:00');
+        $dateTime = new \DateTimeImmutable('2023-01-01 12:00:00');
         
         $result = $log->setCreatedAt($dateTime);
         
@@ -322,7 +322,7 @@ class OAuth2AccessLogTest extends TestCase
 
     public function test_create_setsCreatedAtToCurrentTime(): void
     {
-        $beforeCreation = new \DateTime();
+        $beforeCreation = new \DateTimeImmutable();
         
         $log = OAuth2AccessLog::create(
             'test',
@@ -331,7 +331,7 @@ class OAuth2AccessLogTest extends TestCase
             'success'
         );
         
-        $afterCreation = new \DateTime();
+        $afterCreation = new \DateTimeImmutable();
         
         $this->assertGreaterThanOrEqual($beforeCreation, $log->getCreatedAt());
         $this->assertLessThanOrEqual($afterCreation, $log->getCreatedAt());

@@ -373,7 +373,7 @@ class OAuth2ClientTest extends TestCase
     public function test_setCreateTime_andGetCreateTime(): void
     {
         $client = new OAuth2Client();
-        $time = new \DateTime();
+        $time = new \DateTimeImmutable();
         
         $result = $client->setCreateTime($time);
         
@@ -384,7 +384,7 @@ class OAuth2ClientTest extends TestCase
     public function test_setUpdateTime_andGetUpdateTime(): void
     {
         $client = new OAuth2Client();
-        $time = new \DateTime();
+        $time = new \DateTimeImmutable();
         
         $result = $client->setUpdateTime($time);
         

@@ -68,7 +68,7 @@ class AuthorizationCodeTest extends TestCase
     public function test_setExpiresAt_andGetExpiresAt(): void
     {
         $authCode = new AuthorizationCode();
-        $expiresAt = new \DateTime('+10 minutes');
+        $expiresAt = new \DateTimeImmutable('+10 minutes');
 
         $result = $authCode->setExpiresAt($expiresAt);
 
@@ -135,7 +135,7 @@ class AuthorizationCodeTest extends TestCase
     public function test_isExpired_returnsFalseForFutureDate(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTime('+10 minutes'));
+        $authCode->setExpiresAt(new \DateTimeImmutable('+10 minutes'));
 
         $this->assertFalse($authCode->isExpired());
     }
@@ -143,7 +143,7 @@ class AuthorizationCodeTest extends TestCase
     public function test_isExpired_returnsTrueForPastDate(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTime('-1 minute'));
+        $authCode->setExpiresAt(new \DateTimeImmutable('-1 minute'));
 
         $this->assertTrue($authCode->isExpired());
     }
@@ -151,7 +151,7 @@ class AuthorizationCodeTest extends TestCase
     public function test_isValid_returnsTrueWhenNotExpiredAndNotUsed(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTime('+10 minutes'));
+        $authCode->setExpiresAt(new \DateTimeImmutable('+10 minutes'));
         $authCode->setUsed(false);
 
         $this->assertTrue($authCode->isValid());
@@ -160,7 +160,7 @@ class AuthorizationCodeTest extends TestCase
     public function test_isValid_returnsFalseWhenExpired(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTime('-1 minute'));
+        $authCode->setExpiresAt(new \DateTimeImmutable('-1 minute'));
         $authCode->setUsed(false);
 
         $this->assertFalse($authCode->isValid());
@@ -169,7 +169,7 @@ class AuthorizationCodeTest extends TestCase
     public function test_isValid_returnsFalseWhenUsed(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTime('+10 minutes'));
+        $authCode->setExpiresAt(new \DateTimeImmutable('+10 minutes'));
         $authCode->setUsed(true);
 
         $this->assertFalse($authCode->isValid());
@@ -272,7 +272,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertFalse($authCode->isUsed());
 
         // 验证过期时间大约在15分钟后
-        $expectedExpiry = new \DateTime('+15 minutes');
+        $expectedExpiry = new \DateTimeImmutable('+15 minutes');
         $actualExpiry = $authCode->getExpiresAt();
         $this->assertLessThan(60, abs($expectedExpiry->getTimestamp() - $actualExpiry->getTimestamp()));
     }
@@ -298,7 +298,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertNotEmpty($authCode->getCode());
 
         // 验证默认过期时间为10分钟
-        $expectedExpiry = new \DateTime('+10 minutes');
+        $expectedExpiry = new \DateTimeImmutable('+10 minutes');
         $actualExpiry = $authCode->getExpiresAt();
         $this->assertLessThan(60, abs($expectedExpiry->getTimestamp() - $actualExpiry->getTimestamp()));
     }
