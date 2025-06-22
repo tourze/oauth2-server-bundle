@@ -8,15 +8,14 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
 
 /**
  * OAuth2客户端管理服务
- * 
+ *
  * 负责客户端的创建、验证、管理等功能
  */
 class OAuth2ClientService
 {
     public function __construct(
         private readonly OAuth2ClientRepository $clientRepository,
-    ) {
-    }
+    ) {}
 
     /**
      * 创建新的OAuth2客户端
@@ -61,13 +60,13 @@ class OAuth2ClientService
     public function validateClient(string $clientId, ?string $clientSecret = null): ?OAuth2Client
     {
         $client = $this->clientRepository->findByClientId($clientId);
-        if (!$client) {
+        if ($client === null) {
             return null;
         }
 
         // 机密客户端需要验证密钥
         if ($client->isConfidential()) {
-            if (!$clientSecret || !$this->verifyClientSecret($client, $clientSecret)) {
+            if ($clientSecret === null || !$this->verifyClientSecret($client, $clientSecret)) {
                 return null;
             }
         }
@@ -132,10 +131,10 @@ class OAuth2ClientService
     {
         $plainSecret = $this->generateClientSecret();
         $hashedSecret = $this->hashClientSecret($plainSecret);
-        
+
         $client->setClientSecret($hashedSecret);
         $this->clientRepository->save($client);
-        
+
         return $plainSecret;
     }
 
@@ -180,8 +179,8 @@ class OAuth2ClientService
     {
         do {
             $clientId = 'client_' . bin2hex(random_bytes(16));
-        } while ($this->clientRepository->findByClientId($clientId));
-        
+        } while ($this->clientRepository->findByClientId($clientId) !== null);
+
         return $clientId;
     }
 

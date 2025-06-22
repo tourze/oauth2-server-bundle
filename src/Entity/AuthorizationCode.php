@@ -213,7 +213,7 @@ class AuthorizationCode implements \Stringable
      */
     public function verifyCodeVerifier(string $codeVerifier): bool
     {
-        if (!$this->codeChallenge) {
+        if ($this->codeChallenge === null || $this->codeChallenge === '') {
             // 如果没有代码挑战，则不需要验证
             return true;
         }
@@ -221,12 +221,12 @@ class AuthorizationCode implements \Stringable
         switch ($this->codeChallengeMethod) {
             case 'plain':
                 return hash_equals($this->codeChallenge, $codeVerifier);
-            
+
             case 'S256':
                 $hash = hash('sha256', $codeVerifier, true);
                 $challenge = rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
                 return hash_equals($this->codeChallenge, $challenge);
-            
+
             default:
                 return false;
         }

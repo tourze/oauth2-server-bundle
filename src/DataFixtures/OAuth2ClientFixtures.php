@@ -16,8 +16,7 @@ class OAuth2ClientFixtures extends Fixture
     public function __construct(
         private readonly OAuth2ClientService $clientService,
         private readonly ResolveTargetEntityService $resolveTargetEntityService,
-    ) {
-    }
+    ) {}
 
     /**
      * 创建模拟用户
@@ -68,7 +67,7 @@ class OAuth2ClientFixtures extends Fixture
             description: '移动应用客户端，支持PKCE和授权码模式',
             scopes: ['profile', 'email', 'offline_access']
         );
-        
+
         // 移动应用设置为公开客户端（不需要客户端密钥验证）
         $mobileClient->setConfidential(false);
         $manager->persist($mobileClient);
@@ -85,7 +84,7 @@ class OAuth2ClientFixtures extends Fixture
             description: '第三方系统集成客户端，支持多种授权方式',
             scopes: ['integration:read', 'integration:write', 'webhooks']
         );
-        
+
         // 设置较长的令牌有效期
         $integrationClient->setAccessTokenLifetime(7200); // 2小时
         $integrationClient->setRefreshTokenLifetime(2592000); // 30天

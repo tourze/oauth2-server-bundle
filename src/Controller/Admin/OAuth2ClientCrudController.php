@@ -20,22 +20,13 @@ use EasyCorp\Bundle\EasyAdminBundle\Filter\BooleanFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\EntityFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\TextFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Attribute\Route;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
-use Tourze\OAuth2ServerBundle\Service\OAuth2ClientService;
 
 /**
  * OAuth2客户端管理控制器
  */
 class OAuth2ClientCrudController extends AbstractCrudController
 {
-    public function __construct(
-        private readonly OAuth2ClientService $clientService,
-        private readonly AdminUrlGenerator $adminUrlGenerator,
-    ) {
-    }
 
     public static function getEntityFqcn(): string
     {
@@ -131,7 +122,9 @@ class OAuth2ClientCrudController extends AbstractCrudController
     {
         // 创建重新生成密钥操作
         $regenerateSecret = Action::new('regenerateSecret', '重新生成密钥')
-            ->linkToCrudAction('regenerateSecret')
+            ->linkToRoute('admin_oauth2_client_regenerate_secret', function (OAuth2Client $entity) {
+                return ['entityId' => $entity->getId()];
+            })
             ->setCssClass('btn btn-warning')
             ->setIcon('fa fa-refresh')
             ->displayIf(function (OAuth2Client $client) {
@@ -140,7 +133,9 @@ class OAuth2ClientCrudController extends AbstractCrudController
 
         // 创建启用/禁用操作
         $toggleStatus = Action::new('toggleStatus')
-            ->linkToCrudAction('toggleStatus')
+            ->linkToRoute('admin_oauth2_client_toggle_status', function (OAuth2Client $entity) {
+                return ['entityId' => $entity->getId()];
+            })
             ->setCssClass('btn btn-secondary')
             ->setIcon('fa fa-power-off');
 
@@ -162,82 +157,4 @@ class OAuth2ClientCrudController extends AbstractCrudController
             ->add(EntityFilter::new('user', '关联用户'));
     }
 
-    /**
-     * 重新生成客户端密钥
-     */
-    #[Route('/admin/oauth2-client/{entityId}/regenerate-secret', name: 'admin_oauth2_client_regenerate_secret', methods: ['POST'])]
-    public function regenerateSecret(AdminContext $context, Request $request): RedirectResponse
-    {
-        /** @var OAuth2Client $client */
-        $client = $context->getEntity()->getInstance();
-        
-        if (!$client->isConfidential()) {
-            $this->addFlash('danger', '公开客户端不需要密钥');
-            return $this->redirectToDetail($client);
-        }
-
-        try {
-            $newSecret = $this->clientService->regenerateClientSecret($client);
-            
-            $this->addFlash('success', 
-                "客户端密钥已重新生成。新密钥: <strong>{$newSecret}</strong><br>" .
-                "<small class='text-warning'>请立即保存此密钥，系统不会再次显示明文密钥</small>"
-            );
-        } catch (\Throwable $e) {
-            $this->addFlash('danger', '密钥重新生成失败: ' . $e->getMessage());
-        }
-
-        return $this->redirectToDetail($client);
-    }
-
-    /**
-     * 切换客户端状态
-     */
-    #[Route('/admin/oauth2-client/{entityId}/toggle-status', name: 'admin_oauth2_client_toggle_status', methods: ['POST'])]
-    public function toggleStatus(AdminContext $context, Request $request): RedirectResponse
-    {
-        /** @var OAuth2Client $client */
-        $client = $context->getEntity()->getInstance();
-        
-        try {
-            if ($client->isEnabled()) {
-                $this->clientService->disableClient($client);
-                $this->addFlash('success', '客户端已禁用');
-            } else {
-                $this->clientService->enableClient($client);
-                $this->addFlash('success', '客户端已启用');
-            }
-        } catch (\Throwable $e) {
-            $this->addFlash('danger', '状态切换失败: ' . $e->getMessage());
-        }
-
-        return $this->redirectToIndex();
-    }
-
-    /**
-     * 重定向到详情页
-     */
-    private function redirectToDetail(OAuth2Client $client): RedirectResponse
-    {
-        $url = $this->adminUrlGenerator
-            ->setController(self::class)
-            ->setAction(Action::DETAIL)
-            ->setEntityId($client->getId())
-            ->generateUrl();
-
-        return new RedirectResponse($url);
-    }
-
-    /**
-     * 重定向到列表页
-     */
-    private function redirectToIndex(): RedirectResponse
-    {
-        $url = $this->adminUrlGenerator
-            ->setController(self::class)
-            ->setAction(Action::INDEX)
-            ->generateUrl();
-
-        return new RedirectResponse($url);
-    }
 }

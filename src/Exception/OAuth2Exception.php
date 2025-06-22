@@ -60,11 +60,11 @@ class OAuth2Exception extends \Exception
             'error' => $this->error,
         ];
 
-        if (!empty($this->errorDescription)) {
+        if ($this->errorDescription !== '') {
             $result['error_description'] = $this->errorDescription;
         }
 
-        if ($this->errorUri) {
+        if ($this->errorUri !== null) {
             $result['error_uri'] = $this->errorUri;
         }
 
@@ -150,4 +150,4 @@ class OAuth2Exception extends \Exception
     {
         return new self('temporarily_unavailable', $description, null, Response::HTTP_SERVICE_UNAVAILABLE);
     }
-} 
+}

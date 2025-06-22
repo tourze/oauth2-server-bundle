@@ -6,7 +6,8 @@ use Symfony\Bundle\FrameworkBundle\Routing\AttributeRouteControllerLoader;
 use Symfony\Component\Config\Loader\Loader;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\Routing\RouteCollection;
-use Tourze\OAuth2ServerBundle\Controller\OAuth2Controller;
+use Tourze\OAuth2ServerBundle\Controller\AuthorizeController;
+use Tourze\OAuth2ServerBundle\Controller\TokenController;
 use Tourze\RoutingAutoLoaderBundle\Service\RoutingAutoLoaderInterface;
 
 #[AutoconfigureTag('routing.loader')]
@@ -33,7 +34,8 @@ class AttributeControllerLoader extends Loader implements RoutingAutoLoaderInter
     public function autoload(): RouteCollection
     {
         $collection = new RouteCollection();
-        $collection->addCollection($this->controllerLoader->load(OAuth2Controller::class));
+        $collection->addCollection($this->controllerLoader->load(AuthorizeController::class));
+        $collection->addCollection($this->controllerLoader->load(TokenController::class));
         return $collection;
     }
 }

@@ -34,8 +34,8 @@ class OAuth2ClientRepository extends ServiceEntityRepository
     public function validateClient(string $clientId, ?string $clientSecret = null): ?OAuth2Client
     {
         $client = $this->findByClientId($clientId);
-        
-        if (!$client) {
+
+        if ($client === null) {
             return null;
         }
 
@@ -67,7 +67,7 @@ class OAuth2ClientRepository extends ServiceEntityRepository
     public function save(OAuth2Client $client, bool $flush = true): void
     {
         $this->getEntityManager()->persist($client);
-        
+
         if ($flush) {
             $this->getEntityManager()->flush();
         }
@@ -79,7 +79,7 @@ class OAuth2ClientRepository extends ServiceEntityRepository
     public function remove(OAuth2Client $client, bool $flush = true): void
     {
         $this->getEntityManager()->remove($client);
-        
+
         if ($flush) {
             $this->getEntityManager()->flush();
         }

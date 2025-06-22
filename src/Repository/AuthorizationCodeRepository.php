@@ -34,11 +34,11 @@ class AuthorizationCodeRepository extends ServiceEntityRepository
     public function findValidByCode(string $code): ?AuthorizationCode
     {
         $authCode = $this->findByCode($code);
-        
-        if ($authCode && $authCode->isValid()) {
+
+        if ($authCode !== null && $authCode->isValid()) {
             return $authCode;
         }
-        
+
         return null;
     }
 
@@ -69,7 +69,7 @@ class AuthorizationCodeRepository extends ServiceEntityRepository
     public function save(AuthorizationCode $authCode, bool $flush = true): void
     {
         $this->getEntityManager()->persist($authCode);
-        
+
         if ($flush) {
             $this->getEntityManager()->flush();
         }
@@ -81,9 +81,9 @@ class AuthorizationCodeRepository extends ServiceEntityRepository
     public function remove(AuthorizationCode $authCode, bool $flush = true): void
     {
         $this->getEntityManager()->remove($authCode);
-        
+
         if ($flush) {
             $this->getEntityManager()->flush();
         }
     }
-} 
+}

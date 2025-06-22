@@ -16,9 +16,7 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2AccessLogRepository;
  */
 class AccessLogService
 {
-    public function __construct(private readonly OAuth2AccessLogRepository $accessLogRepository)
-    {
-    }
+    public function __construct(private readonly OAuth2AccessLogRepository $accessLogRepository) {}
 
     /**
      * 记录成功的访问日志
@@ -74,7 +72,7 @@ class AccessLogService
         ?int $responseTime = null
     ): OAuth2AccessLog {
         $clientId = $client?->getClientId() ?? $request->request->get('client_id') ?? $request->query->get('client_id');
-        $userId = $user ? $this->getUserIdentifier($user) : null;
+        $userId = $user !== null ? $this->getUserIdentifier($user) : null;
         $ipAddress = $this->getClientIp($request);
         $userAgent = $request->headers->get('User-Agent');
         $requestParams = $this->sanitizeRequestParams($request);
@@ -103,7 +101,7 @@ class AccessLogService
             $id = call_user_func([$user, 'getId']);
             return is_numeric($id) ? (string) $id : $user->getUserIdentifier();
         }
-        
+
         return $user->getUserIdentifier();
     }
 

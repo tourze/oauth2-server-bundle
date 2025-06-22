@@ -50,14 +50,14 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->where('l.endpoint = :endpoint')
             ->setParameter('endpoint', $endpoint);
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
-        if ($to) {
+        if ($to !== null) {
             $qb->andWhere('l.createdAt <= :to')
-               ->setParameter('to', $to);
+                ->setParameter('to', $to);
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
@@ -73,14 +73,14 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->where('l.client = :client')
             ->setParameter('client', $client);
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
-        if ($to) {
+        if ($to !== null) {
             $qb->andWhere('l.createdAt <= :to')
-               ->setParameter('to', $to);
+                ->setParameter('to', $to);
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
@@ -96,14 +96,14 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->where('l.ipAddress = :ipAddress')
             ->setParameter('ipAddress', $ipAddress);
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
-        if ($to) {
+        if ($to !== null) {
             $qb->andWhere('l.createdAt <= :to')
-               ->setParameter('to', $to);
+                ->setParameter('to', $to);
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult();
@@ -120,9 +120,9 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->orderBy('l.createdAt', 'DESC')
             ->setMaxResults($limit);
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
         return $qb->getQuery()->getResult();
@@ -139,14 +139,14 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->orderBy('access_count', 'DESC')
             ->setMaxResults($limit);
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
-        if ($to) {
+        if ($to !== null) {
             $qb->andWhere('l.createdAt <= :to')
-               ->setParameter('to', $to);
+                ->setParameter('to', $to);
         }
 
         return $qb->getQuery()->getResult();
@@ -165,14 +165,14 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->orderBy('access_count', 'DESC')
             ->setMaxResults($limit);
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
-        if ($to) {
+        if ($to !== null) {
             $qb->andWhere('l.createdAt <= :to')
-               ->setParameter('to', $to);
+                ->setParameter('to', $to);
         }
 
         return $qb->getQuery()->getResult();
@@ -240,19 +240,19 @@ class OAuth2AccessLogRepository extends ServiceEntityRepository
             ->select('AVG(l.responseTime)')
             ->where('l.responseTime IS NOT NULL');
 
-        if ($endpoint) {
+        if ($endpoint !== null) {
             $qb->andWhere('l.endpoint = :endpoint')
-               ->setParameter('endpoint', $endpoint);
+                ->setParameter('endpoint', $endpoint);
         }
 
-        if ($from) {
+        if ($from !== null) {
             $qb->andWhere('l.createdAt >= :from')
-               ->setParameter('from', $from);
+                ->setParameter('from', $from);
         }
 
-        if ($to) {
+        if ($to !== null) {
             $qb->andWhere('l.createdAt <= :to')
-               ->setParameter('to', $to);
+                ->setParameter('to', $to);
         }
 
         $result = $qb->getQuery()->getSingleScalarResult();

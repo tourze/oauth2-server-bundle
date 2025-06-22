@@ -271,7 +271,7 @@ class OAuth2Client implements \Stringable
 
     public function supportsCodeChallengeMethod(string $method): bool
     {
-        return $this->codeChallengeMethod && in_array($method, $this->codeChallengeMethod, true);
+        return $this->codeChallengeMethod !== null && in_array($method, $this->codeChallengeMethod, true);
     }
 
     /**
@@ -299,4 +299,5 @@ class OAuth2Client implements \Stringable
             }
         }
         return $this;
-    }}
+    }
+}

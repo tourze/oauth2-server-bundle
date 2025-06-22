@@ -16,12 +16,11 @@ class AdminMenu implements MenuProviderInterface
 {
     public function __construct(
         private readonly LinkGeneratorInterface $linkGenerator,
-    ) {
-    }
+    ) {}
 
     public function __invoke(ItemInterface $item): void
     {
-        if (!$item->getChild('OAuth2管理')) {
+        if ($item->getChild('OAuth2管理') === null) {
             $item->addChild('OAuth2管理')
                 ->setAttribute('icon', 'fas fa-shield-alt');
         }

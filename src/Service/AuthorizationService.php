@@ -21,12 +21,11 @@ class AuthorizationService
         private readonly OAuth2ClientService $clientService,
         private readonly AccessTokenService $accessTokenService,
         private readonly AuthorizationCodeRepository $authCodeRepository,
-    ) {
-    }
+    ) {}
 
     /**
      * 处理客户端凭证授权
-     * 
+     *
      * @param string $clientId 客户端ID
      * @param string $clientSecret 客户端密钥
      * @param array|null $scopes 请求的作用域
@@ -40,7 +39,7 @@ class AuthorizationService
     ): AccessToken {
         // 验证客户端
         $client = $this->clientService->validateClient($clientId, $clientSecret);
-        if (!$client) {
+        if ($client === null) {
             throw new OAuth2Exception('invalid_client', 'Invalid client credentials');
         }
 
@@ -62,7 +61,7 @@ class AuthorizationService
 
     /**
      * 生成授权码
-     * 
+     *
      * @param OAuth2Client $client OAuth2客户端
      * @param UserInterface $user 授权用户
      * @param string $redirectUri 重定向URI
@@ -93,7 +92,7 @@ class AuthorizationService
         }
 
         // 验证PKCE
-        if ($codeChallenge && !$this->validateCodeChallenge($client, $codeChallengeMethod)) {
+        if ($codeChallenge !== null && !$this->validateCodeChallenge($client, $codeChallengeMethod)) {
             throw new OAuth2Exception('invalid_request', 'Invalid code challenge method');
         }
 
@@ -119,7 +118,7 @@ class AuthorizationService
 
     /**
      * 处理授权码换取访问令牌
-     * 
+     *
      * @param string $code 授权码
      * @param string $clientId 客户端ID
      * @param string|null $clientSecret 客户端密钥（机密客户端需要）
@@ -137,7 +136,7 @@ class AuthorizationService
     ): AccessToken {
         // 查找授权码
         $authCode = $this->authCodeRepository->findValidByCode($code);
-        if (!$authCode) {
+        if ($authCode === null) {
             throw new OAuth2Exception('invalid_grant', 'Invalid authorization code');
         }
 
@@ -149,7 +148,7 @@ class AuthorizationService
 
         // 机密客户端需要验证密钥
         if ($client->isConfidential()) {
-            if (!$clientSecret || !$this->clientService->verifyClientSecret($client, $clientSecret)) {
+            if ($clientSecret === null || !$this->clientService->verifyClientSecret($client, $clientSecret)) {
                 throw new OAuth2Exception('invalid_client', 'Invalid client credentials');
             }
         }
@@ -192,7 +191,7 @@ class AuthorizationService
     ): OAuth2Client {
         // 查找客户端
         $client = $this->clientService->validateClient($clientId);
-        if (!$client) {
+        if ($client === null) {
             throw new OAuth2Exception('invalid_client', 'Invalid client');
         }
 
@@ -212,7 +211,7 @@ class AuthorizationService
         }
 
         // 验证PKCE
-        if ($codeChallenge && !$this->validateCodeChallenge($client, $codeChallengeMethod)) {
+        if ($codeChallenge !== null && !$this->validateCodeChallenge($client, $codeChallengeMethod)) {
             throw new OAuth2Exception('invalid_request', 'Invalid code challenge method');
         }
 
@@ -235,14 +234,14 @@ class AuthorizationService
      */
     private function validateScopes(OAuth2Client $client, ?array $requestedScopes): ?array
     {
-        if (!$requestedScopes) {
+        if ($requestedScopes === null) {
             return null;
         }
 
         $clientScopes = $client->getScopes();
-        
+
         // 如果客户端没有限制作用域，允许所有请求的作用域
-        if (!$clientScopes) {
+        if ($clientScopes === null) {
             return $requestedScopes;
         }
 
@@ -260,7 +259,7 @@ class AuthorizationService
      */
     private function validateCodeChallenge(OAuth2Client $client, ?string $method): bool
     {
-        if (!$method) {
+        if ($method === null) {
             $method = 'plain';
         }
 
