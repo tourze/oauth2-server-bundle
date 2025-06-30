@@ -24,7 +24,7 @@ class RegenerateSecretController extends AbstractController
     ) {
     }
 
-    #[Route('/admin/oauth2-client/{entityId}/regenerate-secret', name: 'admin_oauth2_client_regenerate_secret', methods: ['POST'])]
+    #[Route(path: '/admin/oauth2-client/{entityId}/regenerate-secret', name: 'admin_oauth2_client_regenerate_secret', methods: ['POST'])]
     public function __invoke(AdminContext $context, Request $request): RedirectResponse
     {
         /** @var OAuth2Client $client */

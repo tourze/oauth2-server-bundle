@@ -24,7 +24,7 @@ class ToggleStatusController extends AbstractController
     ) {
     }
 
-    #[Route('/admin/oauth2-client/{entityId}/toggle-status', name: 'admin_oauth2_client_toggle_status', methods: ['POST'])]
+    #[Route(path: '/admin/oauth2-client/{entityId}/toggle-status', name: 'admin_oauth2_client_toggle_status', methods: ['POST'])]
     public function __invoke(AdminContext $context, Request $request): RedirectResponse
     {
         /** @var OAuth2Client $client */

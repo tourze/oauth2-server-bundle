@@ -12,7 +12,7 @@ use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
 
 /**
  * OAuth2授权服务
- * 
+ *
  * 处理各种OAuth2授权流程，包括客户端凭证授权和授权码模式
  */
 class AuthorizationService

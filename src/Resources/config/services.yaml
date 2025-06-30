@@ -12,3 +12,8 @@ services:
     resource: '../../Repository/'
   Tourze\OAuth2ServerBundle\Service\:
     resource: '../../Service/'
+
+  # Explicit service definitions for testing
+  tourze_oauth2_server.service.oauth2_client_service:
+    alias: Tourze\OAuth2ServerBundle\Service\OAuth2ClientService
+    public: true

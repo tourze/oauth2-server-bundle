@@ -13,7 +13,7 @@ use Tourze\OAuth2ServerBundle\Service\AuthorizationService;
 
 /**
  * OAuth2令牌端点控制器
- * 
+ *
  * @see https://tools.ietf.org/html/rfc6749#section-3.2
  */
 class TokenController extends AbstractController
@@ -27,7 +27,7 @@ class TokenController extends AbstractController
     /**
      * 令牌端点 - 处理各种授权类型的令牌请求
      */
-    #[Route('/oauth2/token', name: 'oauth2_token', methods: ['POST'])]
+    #[Route(path: '/oauth2/token', name: 'oauth2_token', methods: ['POST'])]
     public function __invoke(Request $request): JsonResponse
     {
         $startTime = microtime(true);

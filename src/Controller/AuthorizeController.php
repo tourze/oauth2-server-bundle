@@ -15,7 +15,7 @@ use Tourze\OAuth2ServerBundle\Service\AuthorizationService;
 
 /**
  * OAuth2授权端点控制器
- * 
+ *
  * @see https://tools.ietf.org/html/rfc6749#section-3.1
  */
 class AuthorizeController extends AbstractController
@@ -29,7 +29,7 @@ class AuthorizeController extends AbstractController
     /**
      * 授权端点 - 处理授权码模式的授权请求
      */
-    #[Route('/oauth2/authorize', name: 'oauth2_authorize', methods: ['GET', 'POST'])]
+    #[Route(path: '/oauth2/authorize', name: 'oauth2_authorize', methods: ['GET', 'POST'])]
     public function __invoke(Request $request, #[CurrentUser] ?UserInterface $user = null): Response
     {
         $startTime = microtime(true);

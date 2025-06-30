@@ -56,7 +56,7 @@ class OAuth2AccessLogCrudController extends AbstractCrudController
             ->setMaxLength(255)
             ->setHelp('请求的客户端标识符')
             ->formatValue(function ($value) {
-                return $value ?: '-';
+                return $value !== '' ? $value : '-';
             });
 
         yield AssociationField::new('client', '客户端')
@@ -68,7 +68,7 @@ class OAuth2AccessLogCrudController extends AbstractCrudController
             ->setMaxLength(255)
             ->setHelp('执行操作的用户标识符')
             ->formatValue(function ($value) {
-                return $value ?: '-';
+                return $value !== '' ? $value : '-';
             });
 
         yield TextField::new('ipAddress', 'IP地址')
@@ -107,7 +107,7 @@ class OAuth2AccessLogCrudController extends AbstractCrudController
             ->hideOnIndex()
             ->setHelp('错误类型代码')
             ->formatValue(function ($value) {
-                return $value ?: '-';
+                return $value !== '' ? $value : '-';
             });
 
         yield TextField::new('errorMessage', '错误信息')

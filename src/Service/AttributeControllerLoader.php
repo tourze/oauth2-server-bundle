@@ -10,7 +10,7 @@ use Tourze\OAuth2ServerBundle\Controller\AuthorizeController;
 use Tourze\OAuth2ServerBundle\Controller\TokenController;
 use Tourze\RoutingAutoLoaderBundle\Service\RoutingAutoLoaderInterface;
 
-#[AutoconfigureTag('routing.loader')]
+#[AutoconfigureTag(name: 'routing.loader')]
 class AttributeControllerLoader extends Loader implements RoutingAutoLoaderInterface
 {
     private AttributeRouteControllerLoader $controllerLoader;

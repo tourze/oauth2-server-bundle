@@ -6,7 +6,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * OAuth2异常类
- * 
+ *
  * 用于表示OAuth2流程中的各种错误，符合RFC 6749标准
  */
 class OAuth2Exception extends \Exception
@@ -28,7 +28,7 @@ class OAuth2Exception extends \Exception
         $this->errorUri = $errorUri;
         $this->httpStatusCode = $httpStatusCode;
 
-        parent::__construct($errorDescription ?: $error, 0, $previous);
+        parent::__construct($errorDescription !== '' ? $errorDescription : $error, 0, $previous);
     }
 
     public function getError(): string
