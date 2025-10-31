@@ -6,7 +6,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\MockObject\MockObject;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Tourze\AccessTokenBundle\Service\AccessTokenService;
+use Tourze\AccessTokenContracts\TokenServiceInterface;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
 use Tourze\OAuth2ServerBundle\Exception\OAuth2Exception;
 use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
@@ -23,7 +23,7 @@ final class AuthorizationServiceTest extends AbstractIntegrationTestCase
 {
     private OAuth2ClientService&MockObject $clientService;
 
-    private AccessTokenService&MockObject $accessTokenService;
+    private TokenServiceInterface&MockObject $accessTokenService;
 
     private AuthorizationCodeRepository&MockObject $authCodeRepository;
 
@@ -131,12 +131,12 @@ final class AuthorizationServiceTest extends AbstractIntegrationTestCase
     {
         // 创建Mock依赖
         $this->clientService = $this->createMock(OAuth2ClientService::class);
-        $this->accessTokenService = $this->createMock(AccessTokenService::class);
+        $this->accessTokenService = $this->createMock(TokenServiceInterface::class);
         $this->authCodeRepository = $this->createMock(AuthorizationCodeRepository::class);
 
         // 将Mock服务注入容器
         self::getContainer()->set(OAuth2ClientService::class, $this->clientService);
-        self::getContainer()->set(AccessTokenService::class, $this->accessTokenService);
+        self::getContainer()->set(TokenServiceInterface::class, $this->accessTokenService);
         self::getContainer()->set(AuthorizationCodeRepository::class, $this->authCodeRepository);
 
         // 从容器中获取服务实例

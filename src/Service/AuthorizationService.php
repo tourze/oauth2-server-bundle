@@ -4,8 +4,8 @@ namespace Tourze\OAuth2ServerBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Tourze\AccessTokenBundle\Entity\AccessToken;
-use Tourze\AccessTokenBundle\Service\AccessTokenService;
+use Tourze\AccessTokenContracts\AccessTokenInterface;
+use Tourze\AccessTokenContracts\TokenServiceInterface;
 use Tourze\OAuth2ServerBundle\Entity\AuthorizationCode;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
 use Tourze\OAuth2ServerBundle\Exception\OAuth2Exception;
@@ -16,13 +16,13 @@ use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
  *
  * 处理各种OAuth2授权流程，包括客户端凭证授权和授权码模式
  */
-class AuthorizationService
+readonly class AuthorizationService
 {
     public function __construct(
-        private readonly OAuth2ClientService $clientService,
-        private readonly AccessTokenService $accessTokenService,
-        private readonly AuthorizationCodeRepository $authCodeRepository,
-        private readonly EntityManagerInterface $entityManager,
+        private OAuth2ClientService $clientService,
+        private TokenServiceInterface $accessTokenService,
+        private AuthorizationCodeRepository $authCodeRepository,
+        private EntityManagerInterface $entityManager,
     ) {
     }
 
@@ -39,7 +39,7 @@ class AuthorizationService
         string $clientId,
         string $clientSecret,
         ?array $scopes = null,
-    ): AccessToken {
+    ): AccessTokenInterface {
         // 验证客户端
         $client = $this->clientService->validateClient($clientId, $clientSecret);
         if (null === $client) {
@@ -142,7 +142,7 @@ class AuthorizationService
         ?string $clientSecret,
         string $redirectUri,
         ?string $codeVerifier = null,
-    ): AccessToken {
+    ): AccessTokenInterface {
         // 查找授权码
         $authCode = $this->authCodeRepository->findValidByCode($code);
         if (null === $authCode) {
