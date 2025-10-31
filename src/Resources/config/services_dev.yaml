@@ -3,10 +3,8 @@ services:
   _defaults:
     autowire: true      # Automatically injects dependencies in your services.
     autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+    public: true
 
-  Tourze\OAuth2ServerBundle\Controller\:
-    resource: '../../Controller/'
-  Tourze\OAuth2ServerBundle\Repository\:
-    resource: '../../Repository/'
-  Tourze\OAuth2ServerBundle\Service\:
-    resource: '../../Service/'
+  Tourze\OAuth2ServerBundle\DataFixtures\:
+    resource: '../../DataFixtures/'
+    tags: ['doctrine.fixture.orm']

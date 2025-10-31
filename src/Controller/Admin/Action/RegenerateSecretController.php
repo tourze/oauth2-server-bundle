@@ -16,7 +16,7 @@ use Tourze\OAuth2ServerBundle\Service\OAuth2ClientService;
 /**
  * 重新生成OAuth2客户端密钥控制器
  */
-class RegenerateSecretController extends AbstractController
+final class RegenerateSecretController extends AbstractController
 {
     public function __construct(
         private readonly OAuth2ClientService $clientService,
@@ -27,18 +27,19 @@ class RegenerateSecretController extends AbstractController
     #[Route(path: '/admin/oauth2-client/{entityId}/regenerate-secret', name: 'admin_oauth2_client_regenerate_secret', methods: ['POST'])]
     public function __invoke(AdminContext $context, Request $request): RedirectResponse
     {
-        /** @var OAuth2Client $client */
         $client = $context->getEntity()->getInstance();
-        
+        assert($client instanceof OAuth2Client);
+
         if (!$client->isConfidential()) {
             $this->addFlash('danger', '公开客户端不需要密钥');
+
             return $this->redirectToDetail($client);
         }
 
         try {
             $newSecret = $this->clientService->regenerateClientSecret($client);
-            
-            $this->addFlash('success', 
+
+            $this->addFlash('success',
                 "客户端密钥已重新生成。新密钥: <strong>{$newSecret}</strong><br>" .
                 "<small class='text-warning'>请立即保存此密钥，系统不会再次显示明文密钥</small>"
             );
@@ -58,7 +59,8 @@ class RegenerateSecretController extends AbstractController
             ->setController(OAuth2ClientCrudController::class)
             ->setAction(Action::DETAIL)
             ->setEntityId($client->getId())
-            ->generateUrl();
+            ->generateUrl()
+        ;
 
         return new RedirectResponse($url);
     }

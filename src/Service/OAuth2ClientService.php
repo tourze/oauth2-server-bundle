@@ -2,6 +2,8 @@
 
 namespace Tourze\OAuth2ServerBundle\Service;
 
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autoconfigure;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
 use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
@@ -11,14 +13,21 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
  *
  * 负责客户端的创建、验证、管理等功能
  */
+#[Autoconfigure(public: true)]
 class OAuth2ClientService
 {
     public function __construct(
         private readonly OAuth2ClientRepository $clientRepository,
-    ) {}
+        private readonly EntityManagerInterface $entityManager,
+    ) {
+    }
 
     /**
      * 创建新的OAuth2客户端
+     *
+     * @param array<string> $redirectUris
+     * @param array<string> $grantTypes
+     * @param array<string>|null $scopes
      */
     public function createClient(
         UserInterface $user,
@@ -27,7 +36,7 @@ class OAuth2ClientService
         array $grantTypes = ['client_credentials'],
         ?string $description = null,
         bool $confidential = true,
-        ?array $scopes = null
+        ?array $scopes = null,
     ): OAuth2Client {
         $client = new OAuth2Client();
         $client->setUser($user);
@@ -47,10 +56,12 @@ class OAuth2ClientService
         $hashedSecret = $this->hashClientSecret($plainSecret);
         $client->setClientSecret($hashedSecret);
 
-        $this->clientRepository->save($client);
+        $this->entityManager->persist($client);
+        $this->entityManager->flush();
 
         // 返回明文密钥供客户端保存（仅此一次）
         $client->setClientSecret($plainSecret);
+
         return $client;
     }
 
@@ -60,13 +71,13 @@ class OAuth2ClientService
     public function validateClient(string $clientId, ?string $clientSecret = null): ?OAuth2Client
     {
         $client = $this->clientRepository->findByClientId($clientId);
-        if ($client === null) {
+        if (null === $client) {
             return null;
         }
 
         // 机密客户端需要验证密钥
         if ($client->isConfidential()) {
-            if ($clientSecret === null || !$this->verifyClientSecret($client, $clientSecret)) {
+            if (null === $clientSecret || !$this->verifyClientSecret($client, $clientSecret)) {
                 return null;
             }
         }
@@ -89,7 +100,7 @@ class OAuth2ClientService
     {
         $allowedUris = $client->getRedirectUris();
 
-        if (empty($allowedUris)) {
+        if ([] === $allowedUris) {
             return false;
         }
 
@@ -121,7 +132,8 @@ class OAuth2ClientService
      */
     public function updateClient(OAuth2Client $client): void
     {
-        $this->clientRepository->save($client);
+        $this->entityManager->persist($client);
+        $this->entityManager->flush();
     }
 
     /**
@@ -133,7 +145,8 @@ class OAuth2ClientService
         $hashedSecret = $this->hashClientSecret($plainSecret);
 
         $client->setClientSecret($hashedSecret);
-        $this->clientRepository->save($client);
+        $this->entityManager->persist($client);
+        $this->entityManager->flush();
 
         return $plainSecret;
     }
@@ -144,7 +157,8 @@ class OAuth2ClientService
     public function disableClient(OAuth2Client $client): void
     {
         $client->setEnabled(false);
-        $this->clientRepository->save($client);
+        $this->entityManager->persist($client);
+        $this->entityManager->flush();
     }
 
     /**
@@ -153,7 +167,8 @@ class OAuth2ClientService
     public function enableClient(OAuth2Client $client): void
     {
         $client->setEnabled(true);
-        $this->clientRepository->save($client);
+        $this->entityManager->persist($client);
+        $this->entityManager->flush();
     }
 
     /**
@@ -161,11 +176,14 @@ class OAuth2ClientService
      */
     public function deleteClient(OAuth2Client $client): void
     {
-        $this->clientRepository->remove($client);
+        $this->entityManager->remove($client);
+        $this->entityManager->flush();
     }
 
     /**
      * 获取用户的客户端列表
+     *
+     * @return array<OAuth2Client>
      */
     public function getClientsByUser(UserInterface $user): array
     {
@@ -179,7 +197,7 @@ class OAuth2ClientService
     {
         do {
             $clientId = 'client_' . bin2hex(random_bytes(16));
-        } while ($this->clientRepository->findByClientId($clientId) !== null);
+        } while (null !== $this->clientRepository->findByClientId($clientId));
 
         return $clientId;
     }

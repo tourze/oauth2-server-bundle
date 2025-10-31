@@ -4,6 +4,8 @@ namespace Tourze\OAuth2ServerBundle\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
 use Tourze\OAuth2ServerBundle\Repository\OAuth2AccessLogRepository;
 
 /**
@@ -14,22 +16,22 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2AccessLogRepository;
  */
 #[ORM\Entity(repositoryClass: OAuth2AccessLogRepository::class)]
 #[ORM\Table(name: 'oauth2_access_log', options: ['comment' => 'OAuth2访问日志'])]
-#[ORM\Index(name: 'idx_endpoint', columns: ['endpoint'])]
-#[ORM\Index(name: 'idx_client_id', columns: ['client_id'])]
-#[ORM\Index(name: 'idx_ip_address', columns: ['ip_address'])]
-#[ORM\Index(name: 'idx_created_at', columns: ['created_at'])]
-#[ORM\Index(name: 'idx_status', columns: ['status'])]
 class OAuth2AccessLog implements \Stringable
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
-    private ?int $id = null;
+    private ?int $id = null; // @phpstan-ignore-line Doctrine sets this via reflection
 
+    #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '端点名称'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 50)]
     private string $endpoint;
 
+    #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '客户端ID'])]
+    #[Assert\Length(max: 255)]
     private ?string $clientId = null;
 
     #[ORM\ManyToOne(targetEntity: OAuth2Client::class)]
@@ -37,42 +39,67 @@ class OAuth2AccessLog implements \Stringable
     private ?OAuth2Client $client = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '用户ID'])]
+    #[Assert\Length(max: 255)]
     private ?string $userId = null;
 
+    #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 45, options: ['comment' => 'IP地址'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 45)]
+    #[Assert\Ip]
     private string $ipAddress;
 
     #[ORM\Column(type: Types::STRING, length: 500, nullable: true, options: ['comment' => '用户代理'])]
+    #[Assert\Length(max: 500)]
     private ?string $userAgent = null;
 
     #[ORM\Column(type: Types::STRING, length: 10, options: ['comment' => 'HTTP方法'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 10)]
+    #[Assert\Choice(choices: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'])]
     private string $method;
 
+    /**
+     * @var array<string, mixed>|null
+     */
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '请求参数'])]
+    #[Assert\Type(type: 'array')]
     private ?array $requestParams = null;
 
+    #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 20, options: ['comment' => '状态'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 20)]
+    #[Assert\Choice(choices: ['success', 'error'])]
     private string $status;
 
     #[ORM\Column(type: Types::STRING, length: 100, nullable: true, options: ['comment' => '错误代码'])]
+    #[Assert\Length(max: 100)]
     private ?string $errorCode = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true, options: ['comment' => '错误消息'])]
+    #[Assert\Length(max: 65535)]
     private ?string $errorMessage = null;
 
     #[ORM\Column(type: Types::INTEGER, nullable: true, options: ['comment' => '响应时间(毫秒)'])]
+    #[Assert\Type(type: 'int')]
+    #[Assert\PositiveOrZero]
     private ?int $responseTime = null;
 
+    #[IndexColumn]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '创建时间'])]
-    private \DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $createTime;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createTime = new \DateTimeImmutable();
     }
 
     /**
      * 创建访问日志记录
+     */
+    /**
+     * @param array<string, mixed>|null $requestParams
      */
     public static function create(
         string $endpoint,
@@ -86,7 +113,7 @@ class OAuth2AccessLog implements \Stringable
         ?array $requestParams = null,
         ?string $errorCode = null,
         ?string $errorMessage = null,
-        ?int $responseTime = null
+        ?int $responseTime = null,
     ): self {
         $log = new self();
         $log->endpoint = $endpoint;
@@ -115,10 +142,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->endpoint;
     }
 
-    public function setEndpoint(string $endpoint): self
+    public function setEndpoint(string $endpoint): void
     {
         $this->endpoint = $endpoint;
-        return $this;
     }
 
     public function getClientId(): ?string
@@ -126,10 +152,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->clientId;
     }
 
-    public function setClientId(?string $clientId): self
+    public function setClientId(?string $clientId): void
     {
         $this->clientId = $clientId;
-        return $this;
     }
 
     public function getClient(): ?OAuth2Client
@@ -137,10 +162,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->client;
     }
 
-    public function setClient(?OAuth2Client $client): self
+    public function setClient(?OAuth2Client $client): void
     {
         $this->client = $client;
-        return $this;
     }
 
     public function getUserId(): ?string
@@ -148,10 +172,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->userId;
     }
 
-    public function setUserId(?string $userId): self
+    public function setUserId(?string $userId): void
     {
         $this->userId = $userId;
-        return $this;
     }
 
     public function getIpAddress(): string
@@ -159,10 +182,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->ipAddress;
     }
 
-    public function setIpAddress(string $ipAddress): self
+    public function setIpAddress(string $ipAddress): void
     {
         $this->ipAddress = $ipAddress;
-        return $this;
     }
 
     public function getUserAgent(): ?string
@@ -170,10 +192,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->userAgent;
     }
 
-    public function setUserAgent(?string $userAgent): self
+    public function setUserAgent(?string $userAgent): void
     {
         $this->userAgent = $userAgent;
-        return $this;
     }
 
     public function getMethod(): string
@@ -181,21 +202,25 @@ class OAuth2AccessLog implements \Stringable
         return $this->method;
     }
 
-    public function setMethod(string $method): self
+    public function setMethod(string $method): void
     {
         $this->method = $method;
-        return $this;
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getRequestParams(): ?array
     {
         return $this->requestParams;
     }
 
-    public function setRequestParams(?array $requestParams): self
+    /**
+     * @param array<string, mixed>|null $requestParams
+     */
+    public function setRequestParams(?array $requestParams): void
     {
         $this->requestParams = $requestParams;
-        return $this;
     }
 
     public function getStatus(): string
@@ -203,10 +228,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->status;
     }
 
-    public function setStatus(string $status): self
+    public function setStatus(string $status): void
     {
         $this->status = $status;
-        return $this;
     }
 
     public function getErrorCode(): ?string
@@ -214,10 +238,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->errorCode;
     }
 
-    public function setErrorCode(?string $errorCode): self
+    public function setErrorCode(?string $errorCode): void
     {
         $this->errorCode = $errorCode;
-        return $this;
     }
 
     public function getErrorMessage(): ?string
@@ -225,10 +248,9 @@ class OAuth2AccessLog implements \Stringable
         return $this->errorMessage;
     }
 
-    public function setErrorMessage(?string $errorMessage): self
+    public function setErrorMessage(?string $errorMessage): void
     {
         $this->errorMessage = $errorMessage;
-        return $this;
     }
 
     public function getResponseTime(): ?int
@@ -236,21 +258,19 @@ class OAuth2AccessLog implements \Stringable
         return $this->responseTime;
     }
 
-    public function setResponseTime(?int $responseTime): self
+    public function setResponseTime(?int $responseTime): void
     {
         $this->responseTime = $responseTime;
-        return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getCreateTime(): \DateTimeImmutable
     {
-        return $this->createdAt;
+        return $this->createTime;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): self
+    public function setCreateTime(\DateTimeImmutable $createTime): void
     {
-        $this->createdAt = $createdAt;
-        return $this;
+        $this->createTime = $createTime;
     }
 
     /**
@@ -258,7 +278,7 @@ class OAuth2AccessLog implements \Stringable
      */
     public function isSuccess(): bool
     {
-        return $this->status === 'success';
+        return 'success' === $this->status;
     }
 
     /**
@@ -266,7 +286,7 @@ class OAuth2AccessLog implements \Stringable
      */
     public function isError(): bool
     {
-        return $this->status === 'error';
+        return 'error' === $this->status;
     }
 
     /**
@@ -274,7 +294,7 @@ class OAuth2AccessLog implements \Stringable
      */
     public function getFormattedResponseTime(): string
     {
-        if ($this->responseTime === null) {
+        if (null === $this->responseTime) {
             return 'N/A';
         }
 

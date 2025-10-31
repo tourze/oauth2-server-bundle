@@ -6,13 +6,12 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 
 /**
- * @method OAuth2Client|null find($id, $lockMode = null, $lockVersion = null)
- * @method OAuth2Client|null findOneBy(array $criteria, array $orderBy = null)
- * @method OAuth2Client[]    findAll()
- * @method OAuth2Client[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<OAuth2Client>
  */
+#[AsRepository(entityClass: OAuth2Client::class)]
 class OAuth2ClientRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -35,12 +34,12 @@ class OAuth2ClientRepository extends ServiceEntityRepository
     {
         $client = $this->findByClientId($clientId);
 
-        if ($client === null) {
+        if (null === $client) {
             return null;
         }
 
         // 如果是机密客户端，需要验证密钥
-        if ($client->isConfidential() && $clientSecret !== null) {
+        if ($client->isConfidential() && null !== $clientSecret) {
             // 这里应该使用密码哈希验证，实际实现会在服务层处理
             return $client;
         }
@@ -55,30 +54,25 @@ class OAuth2ClientRepository extends ServiceEntityRepository
 
     /**
      * 根据用户查找客户端
+     * @return array<OAuth2Client>
      */
     public function findByUser(UserInterface $user): array
     {
         return $this->findBy(['user' => $user, 'enabled' => true]);
     }
 
-    /**
-     * 保存客户端
-     */
-    public function save(OAuth2Client $client, bool $flush = true): void
+    public function save(OAuth2Client $entity, bool $flush = true): void
     {
-        $this->getEntityManager()->persist($client);
+        $this->getEntityManager()->persist($entity);
 
         if ($flush) {
             $this->getEntityManager()->flush();
         }
     }
 
-    /**
-     * 删除客户端
-     */
-    public function remove(OAuth2Client $client, bool $flush = true): void
+    public function remove(OAuth2Client $entity, bool $flush = true): void
     {
-        $this->getEntityManager()->remove($client);
+        $this->getEntityManager()->remove($entity);
 
         if ($flush) {
             $this->getEntityManager()->flush();

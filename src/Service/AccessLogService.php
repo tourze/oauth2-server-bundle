@@ -2,6 +2,7 @@
 
 namespace Tourze\OAuth2ServerBundle\Service;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2AccessLog;
@@ -16,7 +17,11 @@ use Tourze\OAuth2ServerBundle\Repository\OAuth2AccessLogRepository;
  */
 class AccessLogService
 {
-    public function __construct(private readonly OAuth2AccessLogRepository $accessLogRepository) {}
+    public function __construct(
+        private readonly OAuth2AccessLogRepository $accessLogRepository,
+        private readonly EntityManagerInterface $entityManager,
+    ) {
+    }
 
     /**
      * 记录成功的访问日志
@@ -26,10 +31,12 @@ class AccessLogService
         Request $request,
         ?OAuth2Client $client = null,
         ?UserInterface $user = null,
-        ?int $responseTime = null
+        ?int $responseTime = null,
     ): OAuth2AccessLog {
         $log = $this->createLog($endpoint, $request, 'success', $client, $user, $responseTime);
-        $this->accessLogRepository->save($log);
+        $this->entityManager->persist($log);
+        $this->entityManager->flush();
+
         return $log;
     }
 
@@ -43,17 +50,21 @@ class AccessLogService
         string $errorMessage,
         ?OAuth2Client $client = null,
         ?UserInterface $user = null,
-        ?int $responseTime = null
+        ?int $responseTime = null,
     ): OAuth2AccessLog {
         $log = $this->createLog($endpoint, $request, 'error', $client, $user, $responseTime);
         $log->setErrorCode($errorCode);
         $log->setErrorMessage($errorMessage);
-        $this->accessLogRepository->save($log);
+        $this->entityManager->persist($log);
+        $this->entityManager->flush();
+
         return $log;
     }
 
     /**
      * 批量记录访问日志
+     *
+     * @param array<OAuth2AccessLog> $logs
      */
     public function logBatch(array $logs): void
     {
@@ -69,10 +80,10 @@ class AccessLogService
         string $status,
         ?OAuth2Client $client = null,
         ?UserInterface $user = null,
-        ?int $responseTime = null
+        ?int $responseTime = null,
     ): OAuth2AccessLog {
-        $clientId = $client?->getClientId() ?? $request->request->get('client_id') ?? $request->query->get('client_id');
-        $userId = $user !== null ? $this->getUserIdentifier($user) : null;
+        $clientId = $client?->getClientId() ?? (string) ($request->request->get('client_id') ?? $request->query->get('client_id') ?? '');
+        $userId = null !== $user ? $this->getUserIdentifier($user) : null;
         $ipAddress = $this->getClientIp($request);
         $userAgent = $request->headers->get('User-Agent');
         $requestParams = $this->sanitizeRequestParams($request);
@@ -98,7 +109,9 @@ class AccessLogService
     {
         // 优先使用用户ID（如果用户对象有getId方法）
         if (method_exists($user, 'getId')) {
+            /** @var mixed $id */
             $id = call_user_func([$user, 'getId']);
+
             return is_numeric($id) ? (string) $id : $user->getUserIdentifier();
         }
 
@@ -115,12 +128,12 @@ class AccessLogService
             'HTTP_X_REAL_IP',
             'HTTP_CF_CONNECTING_IP',
             'HTTP_CLIENT_IP',
-            'REMOTE_ADDR'
+            'REMOTE_ADDR',
         ];
 
         foreach ($ipKeys as $key) {
             $ip = $request->server->get($key);
-            if (!empty($ip) && $this->isValidIp($ip)) {
+            if (is_string($ip) && '' !== $ip && $this->isValidIp($ip)) {
                 // 如果是逗号分隔的IP列表，取第一个
                 if (str_contains($ip, ',')) {
                     $ip = trim(explode(',', $ip)[0]);
@@ -139,15 +152,18 @@ class AccessLogService
      */
     private function isValidIp(string $ip): bool
     {
-        return filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false
-            || filter_var(trim($ip), FILTER_VALIDATE_IP) !== false;
+        return false !== filter_var(trim($ip), FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
+            || false !== filter_var(trim($ip), FILTER_VALIDATE_IP);
     }
 
     /**
      * 清理请求参数（移除敏感信息）
+     *
+     * @return array<string, mixed>
      */
     private function sanitizeRequestParams(Request $request): array
     {
+        /** @var array<string, mixed> $params */
         $params = array_merge($request->query->all(), $request->request->all());
 
         // 移除敏感参数
@@ -163,6 +179,8 @@ class AccessLogService
 
     /**
      * 获取端点访问统计
+     *
+     * @return array<string, mixed>
      */
     public function getEndpointStats(string $endpoint, ?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
     {
@@ -182,6 +200,8 @@ class AccessLogService
 
     /**
      * 获取客户端访问统计
+     *
+     * @return array<string, mixed>
      */
     public function getClientStats(OAuth2Client $client, ?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
     {
@@ -203,13 +223,16 @@ class AccessLogService
      */
     public function isSuspiciousIp(string $ipAddress, int $threshold = 100, ?\DateTimeInterface $from = null): bool
     {
-        $from = $from ?? new \DateTime('-1 hour');
+        $from ??= new \DateTime('-1 hour');
         $count = $this->accessLogRepository->getAccessCountByIp($ipAddress, $from);
+
         return $count > $threshold;
     }
 
     /**
      * 获取可疑IP列表
+     *
+     * @return array<array{ipAddress: string, access_count: int}>
      */
     public function getSuspiciousIps(int $threshold = 100, ?\DateTimeInterface $from = null): array
     {
@@ -218,6 +241,8 @@ class AccessLogService
 
     /**
      * 获取错误日志
+     *
+     * @return array<OAuth2AccessLog>
      */
     public function getErrorLogs(int $limit = 100, ?\DateTimeInterface $from = null): array
     {
@@ -226,6 +251,8 @@ class AccessLogService
 
     /**
      * 获取热门端点
+     *
+     * @return array<array<string, mixed>>
      */
     public function getPopularEndpoints(int $limit = 10, ?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
     {
@@ -234,6 +261,8 @@ class AccessLogService
 
     /**
      * 获取热门客户端
+     *
+     * @return array<array<string, mixed>>
      */
     public function getPopularClients(int $limit = 10, ?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
     {
@@ -242,6 +271,8 @@ class AccessLogService
 
     /**
      * 获取日访问量统计
+     *
+     * @return array<array<string, mixed>>
      */
     public function getDailyStats(?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
     {
@@ -254,36 +285,85 @@ class AccessLogService
     public function cleanupOldLogs(int $daysToKeep = 90): int
     {
         $before = new \DateTime("-{$daysToKeep} days");
+
         return $this->accessLogRepository->cleanupOldLogs($before);
     }
 
     /**
      * 异步记录访问日志（用于高并发场景）
+     *
+     * @param array<string, mixed> $logData
      */
     public function logAsync(
         string $endpoint,
         array $logData,
         string $status = 'success',
         ?string $errorCode = null,
-        ?string $errorMessage = null
+        ?string $errorMessage = null,
     ): void {
         // 这里可以实现异步日志记录，如写入队列、消息总线等
         // 当前为同步实现，后续可以根据需要改为异步
 
         $log = OAuth2AccessLog::create(
             endpoint: $endpoint,
-            ipAddress: $logData['ip_address'],
-            method: $logData['method'],
+            ipAddress: $this->extractRequiredStringValue($logData, 'ip_address', '127.0.0.1'),
+            method: $this->extractRequiredStringValue($logData, 'method', 'POST'),
             status: $status,
-            clientId: $logData['client_id'] ?? null,
-            userId: $logData['user_id'] ?? null,
-            userAgent: $logData['user_agent'] ?? null,
-            requestParams: $logData['request_params'] ?? null,
+            clientId: $this->extractStringValue($logData, 'client_id'),
+            userId: $this->extractStringValue($logData, 'user_id'),
+            userAgent: $this->extractStringValue($logData, 'user_agent'),
+            requestParams: $this->extractArrayValue($logData, 'request_params'),
             errorCode: $errorCode,
             errorMessage: $errorMessage,
-            responseTime: $logData['response_time'] ?? null
+            responseTime: $this->extractIntValue($logData, 'response_time')
         );
 
-        $this->accessLogRepository->save($log);
+        $this->entityManager->persist($log);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * 从数组中安全提取必需的字符串值
+     *
+     * @param array<string, mixed> $data
+     */
+    private function extractRequiredStringValue(array $data, string $key, string $default): string
+    {
+        return isset($data[$key]) && is_string($data[$key]) ? $data[$key] : $default;
+    }
+
+    /**
+     * 从数组中安全提取字符串值
+     *
+     * @param array<string, mixed> $data
+     */
+    private function extractStringValue(array $data, string $key, ?string $default = null): ?string
+    {
+        return isset($data[$key]) && is_string($data[$key]) ? $data[$key] : $default;
+    }
+
+    /**
+     * 从数组中安全提取整数值
+     *
+     * @param array<string, mixed> $data
+     */
+    private function extractIntValue(array $data, string $key, ?int $default = null): ?int
+    {
+        return isset($data[$key]) && is_int($data[$key]) ? $data[$key] : $default;
+    }
+
+    /**
+     * 从数组中安全提取数组值
+     *
+     * @param array<string, mixed> $data
+     * @return array<mixed, mixed>|null
+     */
+    private function extractArrayValue(array $data, string $key): ?array
+    {
+        if (!isset($data[$key]) || !is_array($data[$key])) {
+            return null;
+        }
+
+        return $data[$key];
     }
 }

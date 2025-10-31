@@ -6,13 +6,12 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Tourze\OAuth2ServerBundle\Entity\AuthorizationCode;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
+use Tourze\PHPUnitSymfonyKernelTest\Attribute\AsRepository;
 
 /**
- * @method AuthorizationCode|null find($id, $lockMode = null, $lockVersion = null)
- * @method AuthorizationCode|null findOneBy(array $criteria, array $orderBy = null)
- * @method AuthorizationCode[]    findAll()
- * @method AuthorizationCode[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @extends ServiceEntityRepository<AuthorizationCode>
  */
+#[AsRepository(entityClass: AuthorizationCode::class)]
 class AuthorizationCodeRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -35,7 +34,7 @@ class AuthorizationCodeRepository extends ServiceEntityRepository
     {
         $authCode = $this->findByCode($code);
 
-        if ($authCode !== null && $authCode->isValid()) {
+        if (null !== $authCode && $authCode->isValid()) {
             return $authCode;
         }
 
@@ -49,38 +48,36 @@ class AuthorizationCodeRepository extends ServiceEntityRepository
     {
         $qb = $this->createQueryBuilder('ac')
             ->delete()
-            ->where('ac.expiresAt < :now')
-            ->setParameter('now', new \DateTime());
+            ->where('ac.expireTime < :now')
+            ->setParameter('now', new \DateTime())
+        ;
 
-        return $qb->getQuery()->execute();
+        $result = $qb->getQuery()->execute();
+
+        return is_int($result) ? $result : 0;
     }
 
     /**
      * 查找客户端的授权码
+     * @return array<AuthorizationCode>
      */
     public function findByClient(OAuth2Client $client): array
     {
         return $this->findBy(['client' => $client], ['createTime' => 'DESC']);
     }
 
-    /**
-     * 保存授权码
-     */
-    public function save(AuthorizationCode $authCode, bool $flush = true): void
+    public function save(AuthorizationCode $entity, bool $flush = true): void
     {
-        $this->getEntityManager()->persist($authCode);
+        $this->getEntityManager()->persist($entity);
 
         if ($flush) {
             $this->getEntityManager()->flush();
         }
     }
 
-    /**
-     * 删除授权码
-     */
-    public function remove(AuthorizationCode $authCode, bool $flush = true): void
+    public function remove(AuthorizationCode $entity, bool $flush = true): void
     {
-        $this->getEntityManager()->remove($authCode);
+        $this->getEntityManager()->remove($entity);
 
         if ($flush) {
             $this->getEntityManager()->flush();

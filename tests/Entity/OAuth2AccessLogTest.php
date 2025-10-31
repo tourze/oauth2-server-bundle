@@ -1,225 +1,132 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\OAuth2ServerBundle\Tests\Entity;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2AccessLog;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 
 /**
- * OAuth2AccessLog实体单元测试
+ * OAuth2AccessLog实体测试类
+ *
+ * @internal
  */
-class OAuth2AccessLogTest extends TestCase
+#[CoversClass(OAuth2AccessLog::class)]
+final class OAuth2AccessLogTest extends AbstractEntityTestCase
 {
     private OAuth2Client&MockObject $mockClient;
 
     protected function setUp(): void
     {
+        parent::setUp();
+        // Mock具体类是必要的，因为：
+        // 1) OAuth2Client实体类包含业务逻辑方法，需要验证特定的行为
+        // 2) 没有合适的接口可以替代
+        // 3) 单元测试需要控制实体的状态和行为
         $this->mockClient = $this->createMock(OAuth2Client::class);
     }
 
-    public function test_constructor_setsCreatedAtToCurrentTime(): void
+    protected function setUpContainer(): void
+    {
+        // 这个测试不需要额外的容器设置
+    }
+
+    protected function createEntity(): OAuth2AccessLog
+    {
+        return new OAuth2AccessLog();
+    }
+
+    /**
+     * 提供要测试的属性及其示例值
+     */
+    /**
+     * @return array<int, array{string, mixed}>
+     */
+    public static function propertiesProvider(): array
+    {
+        return [
+            ['endpoint', 'token'],
+            ['clientId', 'test_client_123'],
+            ['client', null], // 关联实体，设为null
+            ['userId', 'user_123'],
+            ['ipAddress', '192.168.1.100'],
+            ['userAgent', 'Mozilla/5.0 (compatible; Test/1.0)'],
+            ['method', 'POST'],
+            ['requestParams', ['grant_type' => 'client_credentials', 'scope' => 'read']],
+            ['status', 'success'],
+            ['errorCode', 'invalid_client'],
+            ['errorMessage', 'Client authentication failed'],
+            ['responseTime', 150],
+            ['createTime', new \DateTimeImmutable()],
+        ];
+    }
+
+    // Getter/setter 测试由 AbstractEntityTest 自动提供
+
+    public function testConstructorSetsCreateTimeToCurrentTime(): void
     {
         $beforeCreation = new \DateTimeImmutable();
         $log = new OAuth2AccessLog();
         $afterCreation = new \DateTimeImmutable();
-        
-        $this->assertGreaterThanOrEqual($beforeCreation, $log->getCreatedAt());
-        $this->assertLessThanOrEqual($afterCreation, $log->getCreatedAt());
+
+        $this->assertGreaterThanOrEqual($beforeCreation, $log->getCreateTime());
+        $this->assertLessThanOrEqual($afterCreation, $log->getCreateTime());
     }
 
-    public function test_setEndpoint_andGetEndpoint(): void
-    {
-        $log = new OAuth2AccessLog();
-        $endpoint = 'token';
-        
-        $result = $log->setEndpoint($endpoint);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($endpoint, $log->getEndpoint());
-    }
-
-    public function test_setClientId_andGetClientId(): void
-    {
-        $log = new OAuth2AccessLog();
-        $clientId = 'test_client_123';
-        
-        $result = $log->setClientId($clientId);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($clientId, $log->getClientId());
-    }
-
-    public function test_setClient_andGetClient(): void
-    {
-        $log = new OAuth2AccessLog();
-        
-        $result = $log->setClient($this->mockClient);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($this->mockClient, $log->getClient());
-    }
-
-    public function test_setUserId_andGetUserId(): void
-    {
-        $log = new OAuth2AccessLog();
-        $userId = 'user_123';
-        
-        $result = $log->setUserId($userId);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($userId, $log->getUserId());
-    }
-
-    public function test_setIpAddress_andGetIpAddress(): void
-    {
-        $log = new OAuth2AccessLog();
-        $ipAddress = '192.168.1.100';
-        
-        $result = $log->setIpAddress($ipAddress);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($ipAddress, $log->getIpAddress());
-    }
-
-    public function test_setUserAgent_andGetUserAgent(): void
-    {
-        $log = new OAuth2AccessLog();
-        $userAgent = 'Mozilla/5.0 (compatible; Test/1.0)';
-        
-        $result = $log->setUserAgent($userAgent);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($userAgent, $log->getUserAgent());
-    }
-
-    public function test_setMethod_andGetMethod(): void
-    {
-        $log = new OAuth2AccessLog();
-        $method = 'POST';
-        
-        $result = $log->setMethod($method);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($method, $log->getMethod());
-    }
-
-    public function test_setRequestParams_andGetRequestParams(): void
-    {
-        $log = new OAuth2AccessLog();
-        $params = ['grant_type' => 'client_credentials', 'scope' => 'read'];
-        
-        $result = $log->setRequestParams($params);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($params, $log->getRequestParams());
-    }
-
-    public function test_setStatus_andGetStatus(): void
-    {
-        $log = new OAuth2AccessLog();
-        $status = 'success';
-        
-        $result = $log->setStatus($status);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($status, $log->getStatus());
-    }
-
-    public function test_setErrorCode_andGetErrorCode(): void
-    {
-        $log = new OAuth2AccessLog();
-        $errorCode = 'invalid_client';
-        
-        $result = $log->setErrorCode($errorCode);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($errorCode, $log->getErrorCode());
-    }
-
-    public function test_setErrorMessage_andGetErrorMessage(): void
-    {
-        $log = new OAuth2AccessLog();
-        $errorMessage = 'Client authentication failed';
-        
-        $result = $log->setErrorMessage($errorMessage);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($errorMessage, $log->getErrorMessage());
-    }
-
-    public function test_setResponseTime_andGetResponseTime(): void
-    {
-        $log = new OAuth2AccessLog();
-        $responseTime = 150;
-        
-        $result = $log->setResponseTime($responseTime);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($responseTime, $log->getResponseTime());
-    }
-
-    public function test_setCreatedAt_andGetCreatedAt(): void
-    {
-        $log = new OAuth2AccessLog();
-        $dateTime = new \DateTimeImmutable('2023-01-01 12:00:00');
-        
-        $result = $log->setCreatedAt($dateTime);
-        
-        $this->assertSame($log, $result);
-        $this->assertSame($dateTime, $log->getCreatedAt());
-    }
-
-    public function test_isSuccess_returnsTrueForSuccessStatus(): void
+    public function testIsSuccessReturnsTrueForSuccessStatus(): void
     {
         $log = new OAuth2AccessLog();
         $log->setStatus('success');
-        
+
         $this->assertTrue($log->isSuccess());
     }
 
-    public function test_isSuccess_returnsFalseForNonSuccessStatus(): void
+    public function testIsSuccessReturnsFalseForNonSuccessStatus(): void
     {
         $log = new OAuth2AccessLog();
         $log->setStatus('error');
-        
+
         $this->assertFalse($log->isSuccess());
     }
 
-    public function test_isError_returnsTrueForErrorStatus(): void
+    public function testIsErrorReturnsTrueForErrorStatus(): void
     {
         $log = new OAuth2AccessLog();
         $log->setStatus('error');
-        
+
         $this->assertTrue($log->isError());
     }
 
-    public function test_isError_returnsFalseForNonErrorStatus(): void
+    public function testIsErrorReturnsFalseForNonErrorStatus(): void
     {
         $log = new OAuth2AccessLog();
         $log->setStatus('success');
-        
+
         $this->assertFalse($log->isError());
     }
 
-    public function test_getFormattedResponseTime_returnsFormattedTime(): void
+    public function testGetFormattedResponseTimeReturnsFormattedTime(): void
     {
         $log = new OAuth2AccessLog();
         $log->setResponseTime(250);
-        
+
         $this->assertSame('250ms', $log->getFormattedResponseTime());
     }
 
-    public function test_getFormattedResponseTime_returnsNAForNullTime(): void
+    public function testGetFormattedResponseTimeReturnsNAForNullTime(): void
     {
         $log = new OAuth2AccessLog();
         $log->setResponseTime(null);
-        
+
         $this->assertSame('N/A', $log->getFormattedResponseTime());
     }
 
-    public function test_create_withAllParameters(): void
+    public function testCreateWithAllParameters(): void
     {
         $endpoint = 'token';
         $ipAddress = '192.168.1.100';
@@ -232,7 +139,7 @@ class OAuth2AccessLogTest extends TestCase
         $errorCode = null;
         $errorMessage = null;
         $responseTime = 300;
-        
+
         $log = OAuth2AccessLog::create(
             $endpoint,
             $ipAddress,
@@ -247,8 +154,7 @@ class OAuth2AccessLogTest extends TestCase
             $errorMessage,
             $responseTime
         );
-        
-        $this->assertInstanceOf(OAuth2AccessLog::class, $log);
+
         $this->assertSame($endpoint, $log->getEndpoint());
         $this->assertSame($ipAddress, $log->getIpAddress());
         $this->assertSame($method, $log->getMethod());
@@ -263,21 +169,20 @@ class OAuth2AccessLogTest extends TestCase
         $this->assertSame($responseTime, $log->getResponseTime());
     }
 
-    public function test_create_withMinimalParameters(): void
+    public function testCreateWithMinimalParameters(): void
     {
         $endpoint = 'authorize';
         $ipAddress = '10.0.0.1';
         $method = 'GET';
         $status = 'error';
-        
+
         $log = OAuth2AccessLog::create(
             $endpoint,
             $ipAddress,
             $method,
             $status
         );
-        
-        $this->assertInstanceOf(OAuth2AccessLog::class, $log);
+
         $this->assertSame($endpoint, $log->getEndpoint());
         $this->assertSame($ipAddress, $log->getIpAddress());
         $this->assertSame($method, $log->getMethod());
@@ -292,7 +197,7 @@ class OAuth2AccessLogTest extends TestCase
         $this->assertNull($log->getResponseTime());
     }
 
-    public function test_create_withErrorInformation(): void
+    public function testCreateWithErrorInformation(): void
     {
         $endpoint = 'token';
         $ipAddress = '127.0.0.1';
@@ -300,7 +205,7 @@ class OAuth2AccessLogTest extends TestCase
         $status = 'error';
         $errorCode = 'invalid_grant';
         $errorMessage = 'Authorization code has expired';
-        
+
         $log = OAuth2AccessLog::create(
             $endpoint,
             $ipAddress,
@@ -314,26 +219,26 @@ class OAuth2AccessLogTest extends TestCase
             $errorCode,
             $errorMessage
         );
-        
+
         $this->assertSame($errorCode, $log->getErrorCode());
         $this->assertSame($errorMessage, $log->getErrorMessage());
         $this->assertTrue($log->isError());
     }
 
-    public function test_create_setsCreatedAtToCurrentTime(): void
+    public function testCreateSetsCreateTimeToCurrentTime(): void
     {
         $beforeCreation = new \DateTimeImmutable();
-        
+
         $log = OAuth2AccessLog::create(
             'test',
             '127.0.0.1',
             'GET',
             'success'
         );
-        
+
         $afterCreation = new \DateTimeImmutable();
-        
-        $this->assertGreaterThanOrEqual($beforeCreation, $log->getCreatedAt());
-        $this->assertLessThanOrEqual($afterCreation, $log->getCreatedAt());
+
+        $this->assertGreaterThanOrEqual($beforeCreation, $log->getCreateTime());
+        $this->assertLessThanOrEqual($afterCreation, $log->getCreateTime());
     }
-} 
+}

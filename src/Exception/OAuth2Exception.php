@@ -11,24 +11,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class OAuth2Exception extends \Exception
 {
-    private string $error;
-    private string $errorDescription;
-    private ?string $errorUri;
-    private int $httpStatusCode;
-
     public function __construct(
-        string $error,
-        string $errorDescription = '',
-        ?string $errorUri = null,
-        int $httpStatusCode = Response::HTTP_BAD_REQUEST,
-        ?\Throwable $previous = null
+        private readonly string $error,
+        private readonly string $errorDescription = '',
+        private readonly ?string $errorUri = null,
+        private readonly int $httpStatusCode = Response::HTTP_BAD_REQUEST,
+        ?\Throwable $previous = null,
     ) {
-        $this->error = $error;
-        $this->errorDescription = $errorDescription;
-        $this->errorUri = $errorUri;
-        $this->httpStatusCode = $httpStatusCode;
-
-        parent::__construct($errorDescription !== '' ? $errorDescription : $error, 0, $previous);
+        parent::__construct('' !== $errorDescription ? $errorDescription : $error, 0, $previous);
     }
 
     public function getError(): string
@@ -53,6 +43,8 @@ class OAuth2Exception extends \Exception
 
     /**
      * 将异常转换为数组格式（用于JSON响应）
+     *
+     * @return array<string, string>
      */
     public function toArray(): array
     {
@@ -60,11 +52,11 @@ class OAuth2Exception extends \Exception
             'error' => $this->error,
         ];
 
-        if ($this->errorDescription !== '') {
+        if ('' !== $this->errorDescription) {
             $result['error_description'] = $this->errorDescription;
         }
 
-        if ($this->errorUri !== null) {
+        if (null !== $this->errorUri) {
             $result['error_uri'] = $this->errorUri;
         }
 

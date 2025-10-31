@@ -5,6 +5,7 @@ namespace Tourze\OAuth2ServerBundle\Entity;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 use Tourze\DoctrineIndexedBundle\Attribute\IndexColumn;
 use Tourze\DoctrineTimestampBundle\Traits\CreateTimeAware;
 use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
@@ -17,18 +18,19 @@ use Tourze\OAuth2ServerBundle\Repository\AuthorizationCodeRepository;
  */
 #[ORM\Entity(repositoryClass: AuthorizationCodeRepository::class)]
 #[ORM\Table(name: 'oauth2_authorization_code', options: ['comment' => 'OAuth2授权码'])]
-#[ORM\Index(name: 'idx_oauth2_auth_code', columns: ['code'])]
-#[ORM\Index(name: 'idx_oauth2_auth_expires', columns: ['expires_at'])]
 class AuthorizationCode implements \Stringable
 {
     use CreateTimeAware;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
-    private ?int $id = null;
+    private ?int $id = null; // @phpstan-ignore-line Doctrine sets this via reflection
 
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 128, unique: true, options: ['comment' => '授权码'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 128)]
     private string $code;
 
     /**
@@ -42,32 +44,44 @@ class AuthorizationCode implements \Stringable
      * 授权的用户
      */
     #[ORM\ManyToOne(targetEntity: UserInterface::class)]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private UserInterface $user;
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?UserInterface $user = null;
 
     #[ORM\Column(type: Types::STRING, length: 2000, options: ['comment' => '重定向URI'])]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 2000)]
+    #[Assert\Url]
     private string $redirectUri;
 
     #[IndexColumn]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, options: ['comment' => '过期时间'])]
-    private \DateTimeImmutable $expiresAt;
+    #[Assert\NotNull]
+    private \DateTimeImmutable $expireTime;
 
+    /**
+     * @var array<string>|null
+     */
     #[ORM\Column(type: Types::JSON, nullable: true, options: ['comment' => '授权作用域'])]
+    #[Assert\Type(type: 'array')]
     private ?array $scopes = null;
 
     #[ORM\Column(type: Types::STRING, length: 128, nullable: true, options: ['comment' => 'PKCE代码挑战'])]
+    #[Assert\Length(max: 128)]
     private ?string $codeChallenge = null;
 
     #[ORM\Column(type: Types::STRING, length: 10, nullable: true, options: ['comment' => 'PKCE代码挑战方法'])]
+    #[Assert\Choice(choices: ['plain', 'S256'])]
+    #[Assert\Length(max: 10)]
     private ?string $codeChallengeMethod = null;
 
     #[IndexColumn]
     #[ORM\Column(type: Types::BOOLEAN, options: ['comment' => '是否已使用', 'default' => false])]
+    #[Assert\Type(type: 'bool')]
     private bool $used = false;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true, options: ['comment' => '状态参数'])]
+    #[Assert\Length(max: 255)]
     private ?string $state = null;
-
 
     public function __toString(): string
     {
@@ -86,10 +100,9 @@ class AuthorizationCode implements \Stringable
         return $this->code;
     }
 
-    public function setCode(string $code): static
+    public function setCode(string $code): void
     {
         $this->code = $code;
-        return $this;
     }
 
     public function getClient(): ?OAuth2Client
@@ -97,21 +110,19 @@ class AuthorizationCode implements \Stringable
         return $this->client;
     }
 
-    public function setClient(?OAuth2Client $client): static
+    public function setClient(?OAuth2Client $client): void
     {
         $this->client = $client;
-        return $this;
     }
 
-    public function getUser(): UserInterface
+    public function getUser(): ?UserInterface
     {
         return $this->user;
     }
 
-    public function setUser(UserInterface $user): static
+    public function setUser(?UserInterface $user): void
     {
         $this->user = $user;
-        return $this;
     }
 
     public function getRedirectUri(): string
@@ -119,32 +130,35 @@ class AuthorizationCode implements \Stringable
         return $this->redirectUri;
     }
 
-    public function setRedirectUri(string $redirectUri): static
+    public function setRedirectUri(string $redirectUri): void
     {
         $this->redirectUri = $redirectUri;
-        return $this;
     }
 
-    public function getExpiresAt(): \DateTimeImmutable
+    public function getExpireTime(): \DateTimeImmutable
     {
-        return $this->expiresAt;
+        return $this->expireTime;
     }
 
-    public function setExpiresAt(\DateTimeImmutable $expiresAt): static
+    public function setExpireTime(\DateTimeImmutable $expireTime): void
     {
-        $this->expiresAt = $expiresAt;
-        return $this;
+        $this->expireTime = $expireTime;
     }
 
+    /**
+     * @return array<string>|null
+     */
     public function getScopes(): ?array
     {
         return $this->scopes;
     }
 
-    public function setScopes(?array $scopes): static
+    /**
+     * @param array<string>|null $scopes
+     */
+    public function setScopes(?array $scopes): void
     {
         $this->scopes = $scopes;
-        return $this;
     }
 
     public function getCodeChallenge(): ?string
@@ -152,10 +166,9 @@ class AuthorizationCode implements \Stringable
         return $this->codeChallenge;
     }
 
-    public function setCodeChallenge(?string $codeChallenge): static
+    public function setCodeChallenge(?string $codeChallenge): void
     {
         $this->codeChallenge = $codeChallenge;
-        return $this;
     }
 
     public function getCodeChallengeMethod(): ?string
@@ -163,10 +176,9 @@ class AuthorizationCode implements \Stringable
         return $this->codeChallengeMethod;
     }
 
-    public function setCodeChallengeMethod(?string $codeChallengeMethod): static
+    public function setCodeChallengeMethod(?string $codeChallengeMethod): void
     {
         $this->codeChallengeMethod = $codeChallengeMethod;
-        return $this;
     }
 
     public function isUsed(): bool
@@ -174,10 +186,9 @@ class AuthorizationCode implements \Stringable
         return $this->used;
     }
 
-    public function setUsed(bool $used): static
+    public function setUsed(bool $used): void
     {
         $this->used = $used;
-        return $this;
     }
 
     public function getState(): ?string
@@ -185,19 +196,17 @@ class AuthorizationCode implements \Stringable
         return $this->state;
     }
 
-    public function setState(?string $state): static
+    public function setState(?string $state): void
     {
         $this->state = $state;
-        return $this;
     }
-
 
     /**
      * 检查授权码是否过期
      */
     public function isExpired(): bool
     {
-        return $this->expiresAt < new \DateTime();
+        return $this->expireTime < new \DateTime();
     }
 
     /**
@@ -213,7 +222,7 @@ class AuthorizationCode implements \Stringable
      */
     public function verifyCodeVerifier(string $codeVerifier): bool
     {
-        if ($this->codeChallenge === null || $this->codeChallenge === '') {
+        if (null === $this->codeChallenge || '' === $this->codeChallenge) {
             // 如果没有代码挑战，则不需要验证
             return true;
         }
@@ -225,6 +234,7 @@ class AuthorizationCode implements \Stringable
             case 'S256':
                 $hash = hash('sha256', $codeVerifier, true);
                 $challenge = rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
+
                 return hash_equals($this->codeChallenge, $challenge);
 
             default:
@@ -235,15 +245,18 @@ class AuthorizationCode implements \Stringable
     /**
      * 创建新的授权码
      */
+    /**
+     * @param array<string>|null $scopes
+     */
     public static function create(
         OAuth2Client $client,
-        UserInterface $user,
+        ?UserInterface $user,
         string $redirectUri,
         ?array $scopes = null,
         int $expiresInMinutes = 10,
         ?string $codeChallenge = null,
         ?string $codeChallengeMethod = null,
-        ?string $state = null
+        ?string $state = null,
     ): self {
         $authCode = new self();
         $authCode->setCode(bin2hex(random_bytes(32)));
@@ -251,7 +264,7 @@ class AuthorizationCode implements \Stringable
         $authCode->setUser($user);
         $authCode->setRedirectUri($redirectUri);
         $authCode->setScopes($scopes);
-        $authCode->setExpiresAt(new \DateTimeImmutable("+{$expiresInMinutes} minutes"));
+        $authCode->setExpireTime(new \DateTimeImmutable("+{$expiresInMinutes} minutes"));
         $authCode->setCodeChallenge($codeChallenge);
         $authCode->setCodeChallengeMethod($codeChallengeMethod);
         $authCode->setState($state);

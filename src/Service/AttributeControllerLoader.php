@@ -13,7 +13,7 @@ use Tourze\RoutingAutoLoaderBundle\Service\RoutingAutoLoaderInterface;
 #[AutoconfigureTag(name: 'routing.loader')]
 class AttributeControllerLoader extends Loader implements RoutingAutoLoaderInterface
 {
-    private AttributeRouteControllerLoader $controllerLoader;
+    private readonly AttributeRouteControllerLoader $controllerLoader;
 
     public function __construct()
     {
@@ -36,6 +36,7 @@ class AttributeControllerLoader extends Loader implements RoutingAutoLoaderInter
         $collection = new RouteCollection();
         $collection->addCollection($this->controllerLoader->load(AuthorizeController::class));
         $collection->addCollection($this->controllerLoader->load(TokenController::class));
+
         return $collection;
     }
 }

@@ -1,25 +1,36 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\OAuth2ServerBundle\Tests\Exception;
 
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
 use Symfony\Component\HttpFoundation\Response;
 use Tourze\OAuth2ServerBundle\Exception\OAuth2Exception;
+use Tourze\PHPUnitBase\AbstractExceptionTestCase;
 
 /**
  * OAuth2Exception单元测试
+ *
+ * @internal
  */
-class OAuth2ExceptionTest extends TestCase
+#[CoversClass(OAuth2Exception::class)]
+final class OAuth2ExceptionTest extends AbstractExceptionTestCase
 {
-    public function test_constructor_withAllParameters(): void
+    protected function setUpContainer(): void
+    {
+        // 这个测试不需要额外的设置
+    }
+
+    public function testConstructorWithAllParameters(): void
     {
         $error = 'invalid_request';
         $description = 'Test description';
         $uri = 'https://example.com/error';
         $statusCode = Response::HTTP_BAD_REQUEST;
-        
+
         $exception = new OAuth2Exception($error, $description, $uri, $statusCode);
-        
+
         $this->assertSame($error, $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
         $this->assertSame($uri, $exception->getErrorUri());
@@ -27,12 +38,12 @@ class OAuth2ExceptionTest extends TestCase
         $this->assertSame($description, $exception->getMessage());
     }
 
-    public function test_constructor_withMinimalParameters(): void
+    public function testConstructorWithMinimalParameters(): void
     {
         $error = 'invalid_client';
-        
+
         $exception = new OAuth2Exception($error);
-        
+
         $this->assertSame($error, $exception->getError());
         $this->assertSame('', $exception->getErrorDescription());
         $this->assertNull($exception->getErrorUri());
@@ -40,232 +51,232 @@ class OAuth2ExceptionTest extends TestCase
         $this->assertSame($error, $exception->getMessage());
     }
 
-    public function test_constructor_withEmptyDescription(): void
+    public function testConstructorWithEmptyDescription(): void
     {
         $error = 'server_error';
         $description = '';
-        
+
         $exception = new OAuth2Exception($error, $description);
-        
+
         $this->assertSame($error, $exception->getMessage());
     }
 
-    public function test_toArray_withAllFields(): void
+    public function testToArrayWithAllFields(): void
     {
         $exception = new OAuth2Exception(
             'invalid_grant',
             'Invalid authorization code',
             'https://example.com/docs/errors'
         );
-        
+
         $result = $exception->toArray();
-        
+
         $this->assertSame('invalid_grant', $result['error']);
         $this->assertSame('Invalid authorization code', $result['error_description']);
         $this->assertSame('https://example.com/docs/errors', $result['error_uri']);
     }
 
-    public function test_toArray_withoutOptionalFields(): void
+    public function testToArrayWithoutOptionalFields(): void
     {
         $exception = new OAuth2Exception('access_denied');
-        
+
         $result = $exception->toArray();
-        
+
         $this->assertSame('access_denied', $result['error']);
         $this->assertArrayNotHasKey('error_description', $result);
         $this->assertArrayNotHasKey('error_uri', $result);
     }
 
-    public function test_toArray_withEmptyDescription(): void
+    public function testToArrayWithEmptyDescription(): void
     {
         $exception = new OAuth2Exception('invalid_scope', '');
-        
+
         $result = $exception->toArray();
-        
+
         $this->assertArrayNotHasKey('error_description', $result);
     }
 
-    public function test_invalidRequest_withDefaultDescription(): void
+    public function testInvalidRequestWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::invalidRequest();
-        
+
         $this->assertSame('invalid_request', $exception->getError());
         $this->assertSame('Invalid request', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_BAD_REQUEST, $exception->getHttpStatusCode());
     }
 
-    public function test_invalidRequest_withCustomDescription(): void
+    public function testInvalidRequestWithCustomDescription(): void
     {
         $description = 'Missing required parameter: client_id';
         $exception = OAuth2Exception::invalidRequest($description);
-        
+
         $this->assertSame('invalid_request', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
     }
 
-    public function test_invalidClient_withDefaultDescription(): void
+    public function testInvalidClientWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::invalidClient();
-        
+
         $this->assertSame('invalid_client', $exception->getError());
         $this->assertSame('Invalid client', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_UNAUTHORIZED, $exception->getHttpStatusCode());
     }
 
-    public function test_invalidClient_withCustomDescription(): void
+    public function testInvalidClientWithCustomDescription(): void
     {
         $description = 'Client authentication failed';
         $exception = OAuth2Exception::invalidClient($description);
-        
+
         $this->assertSame('invalid_client', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_UNAUTHORIZED, $exception->getHttpStatusCode());
     }
 
-    public function test_invalidGrant_withDefaultDescription(): void
+    public function testInvalidGrantWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::invalidGrant();
-        
+
         $this->assertSame('invalid_grant', $exception->getError());
         $this->assertSame('Invalid grant', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_BAD_REQUEST, $exception->getHttpStatusCode());
     }
 
-    public function test_invalidGrant_withCustomDescription(): void
+    public function testInvalidGrantWithCustomDescription(): void
     {
         $description = 'Authorization code has expired';
         $exception = OAuth2Exception::invalidGrant($description);
-        
+
         $this->assertSame('invalid_grant', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
     }
 
-    public function test_unauthorizedClient_withDefaultDescription(): void
+    public function testUnauthorizedClientWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::unauthorizedClient();
-        
+
         $this->assertSame('unauthorized_client', $exception->getError());
         $this->assertSame('Unauthorized client', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_BAD_REQUEST, $exception->getHttpStatusCode());
     }
 
-    public function test_unauthorizedClient_withCustomDescription(): void
+    public function testUnauthorizedClientWithCustomDescription(): void
     {
         $description = 'Client not authorized for this grant type';
         $exception = OAuth2Exception::unauthorizedClient($description);
-        
+
         $this->assertSame('unauthorized_client', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
     }
 
-    public function test_unsupportedGrantType_withDefaultDescription(): void
+    public function testUnsupportedGrantTypeWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::unsupportedGrantType();
-        
+
         $this->assertSame('unsupported_grant_type', $exception->getError());
         $this->assertSame('Unsupported grant type', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_BAD_REQUEST, $exception->getHttpStatusCode());
     }
 
-    public function test_unsupportedGrantType_withCustomDescription(): void
+    public function testUnsupportedGrantTypeWithCustomDescription(): void
     {
         $description = 'Grant type "password" is not supported';
         $exception = OAuth2Exception::unsupportedGrantType($description);
-        
+
         $this->assertSame('unsupported_grant_type', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
     }
 
-    public function test_unsupportedResponseType_withDefaultDescription(): void
+    public function testUnsupportedResponseTypeWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::unsupportedResponseType();
-        
+
         $this->assertSame('unsupported_response_type', $exception->getError());
         $this->assertSame('Unsupported response type', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_BAD_REQUEST, $exception->getHttpStatusCode());
     }
 
-    public function test_unsupportedResponseType_withCustomDescription(): void
+    public function testUnsupportedResponseTypeWithCustomDescription(): void
     {
         $description = 'Response type "token" is not supported';
         $exception = OAuth2Exception::unsupportedResponseType($description);
-        
+
         $this->assertSame('unsupported_response_type', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
     }
 
-    public function test_invalidScope_withDefaultDescription(): void
+    public function testInvalidScopeWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::invalidScope();
-        
+
         $this->assertSame('invalid_scope', $exception->getError());
         $this->assertSame('Invalid scope', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_BAD_REQUEST, $exception->getHttpStatusCode());
     }
 
-    public function test_invalidScope_withCustomDescription(): void
+    public function testInvalidScopeWithCustomDescription(): void
     {
         $description = 'Scope "admin" is not allowed';
         $exception = OAuth2Exception::invalidScope($description);
-        
+
         $this->assertSame('invalid_scope', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
     }
 
-    public function test_accessDenied_withDefaultDescription(): void
+    public function testAccessDeniedWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::accessDenied();
-        
+
         $this->assertSame('access_denied', $exception->getError());
         $this->assertSame('Access denied', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_FORBIDDEN, $exception->getHttpStatusCode());
     }
 
-    public function test_accessDenied_withCustomDescription(): void
+    public function testAccessDeniedWithCustomDescription(): void
     {
         $description = 'User denied authorization request';
         $exception = OAuth2Exception::accessDenied($description);
-        
+
         $this->assertSame('access_denied', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_FORBIDDEN, $exception->getHttpStatusCode());
     }
 
-    public function test_serverError_withDefaultDescription(): void
+    public function testServerErrorWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::serverError();
-        
+
         $this->assertSame('server_error', $exception->getError());
         $this->assertSame('Server error', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $exception->getHttpStatusCode());
     }
 
-    public function test_serverError_withCustomDescription(): void
+    public function testServerErrorWithCustomDescription(): void
     {
         $description = 'Database connection failed';
         $exception = OAuth2Exception::serverError($description);
-        
+
         $this->assertSame('server_error', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_INTERNAL_SERVER_ERROR, $exception->getHttpStatusCode());
     }
 
-    public function test_temporarilyUnavailable_withDefaultDescription(): void
+    public function testTemporarilyUnavailableWithDefaultDescription(): void
     {
         $exception = OAuth2Exception::temporarilyUnavailable();
-        
+
         $this->assertSame('temporarily_unavailable', $exception->getError());
         $this->assertSame('Temporarily unavailable', $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_SERVICE_UNAVAILABLE, $exception->getHttpStatusCode());
     }
 
-    public function test_temporarilyUnavailable_withCustomDescription(): void
+    public function testTemporarilyUnavailableWithCustomDescription(): void
     {
         $description = 'Service is under maintenance';
         $exception = OAuth2Exception::temporarilyUnavailable($description);
-        
+
         $this->assertSame('temporarily_unavailable', $exception->getError());
         $this->assertSame($description, $exception->getErrorDescription());
         $this->assertSame(Response::HTTP_SERVICE_UNAVAILABLE, $exception->getHttpStatusCode());
     }
-} 
+}

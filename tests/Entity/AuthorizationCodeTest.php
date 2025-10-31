@@ -1,181 +1,119 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tourze\OAuth2ServerBundle\Tests\Entity;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\OAuth2ServerBundle\Entity\AuthorizationCode;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
+use Tourze\PHPUnitDoctrineEntity\AbstractEntityTestCase;
 
 /**
- * AuthorizationCode实体单元测试
+ * AuthorizationCode实体测试类
+ *
+ * @internal
  */
-class AuthorizationCodeTest extends TestCase
+#[CoversClass(AuthorizationCode::class)]
+final class AuthorizationCodeTest extends AbstractEntityTestCase
 {
     private OAuth2Client&MockObject $mockClient;
+
     private UserInterface&MockObject $mockUser;
 
     protected function setUp(): void
     {
+        parent::setUp();
+
+        // Mock具体类是必要的，因为：
+        // 1) OAuth2Client实体类包含业务逻辑方法，需要验证特定的行为
+        // 2) 没有合适的接口可以替代
+        // 3) 单元测试需要控制实体的状态和行为
         $this->mockClient = $this->createMock(OAuth2Client::class);
         $this->mockUser = $this->createMock(UserInterface::class);
         $this->mockUser->method('getUserIdentifier')->willReturn('test@example.com');
     }
 
-    public function test_setCode_andGetCode(): void
+    /**
+     * 创建被测实体实例
+     */
+    protected function createEntity(): AuthorizationCode
     {
-        $authCode = new AuthorizationCode();
-        $code = 'test_authorization_code';
-
-        $result = $authCode->setCode($code);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($code, $authCode->getCode());
+        return new AuthorizationCode();
     }
 
-    public function test_setClient_andGetClient(): void
+    /**
+     * 提供要测试的属性及其示例值
+     */
+    /**
+     * @return iterable<string, array{string, mixed}>
+     */
+    public static function propertiesProvider(): iterable
     {
-        $authCode = new AuthorizationCode();
-
-        $result = $authCode->setClient($this->mockClient);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($this->mockClient, $authCode->getClient());
+        return [
+            'code' => ['code', 'test_authorization_code'],
+            'client' => ['client', null], // 关联实体，设为null
+            'user' => ['user', null], // 关联实体，设为null
+            'redirectUri' => ['redirectUri', 'https://example.com/callback'],
+            'expireTime' => ['expireTime', new \DateTimeImmutable('+10 minutes')],
+            'scopes' => ['scopes', ['read', 'write']],
+            'codeChallenge' => ['codeChallenge', 'test_challenge'],
+            'codeChallengeMethod' => ['codeChallengeMethod', 'S256'],
+            'used' => ['used', true],
+            'state' => ['state', 'random_state_value'],
+            'createTime' => ['createTime', new \DateTimeImmutable()],
+        ];
     }
 
-    public function test_setUser_andGetUser(): void
+    // Getter/setter 测试由 AbstractEntityTest 自动提供
+
+    public function testIsExpiredReturnsFalseForFutureDate(): void
     {
         $authCode = new AuthorizationCode();
-
-        $result = $authCode->setUser($this->mockUser);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($this->mockUser, $authCode->getUser());
-    }
-
-    public function test_setRedirectUri_andGetRedirectUri(): void
-    {
-        $authCode = new AuthorizationCode();
-        $uri = 'https://example.com/callback';
-
-        $result = $authCode->setRedirectUri($uri);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($uri, $authCode->getRedirectUri());
-    }
-
-    public function test_setExpiresAt_andGetExpiresAt(): void
-    {
-        $authCode = new AuthorizationCode();
-        $expiresAt = new \DateTimeImmutable('+10 minutes');
-
-        $result = $authCode->setExpiresAt($expiresAt);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($expiresAt, $authCode->getExpiresAt());
-    }
-
-    public function test_setScopes_andGetScopes(): void
-    {
-        $authCode = new AuthorizationCode();
-        $scopes = ['read', 'write'];
-
-        $result = $authCode->setScopes($scopes);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($scopes, $authCode->getScopes());
-    }
-
-    public function test_setCodeChallenge_andGetCodeChallenge(): void
-    {
-        $authCode = new AuthorizationCode();
-        $challenge = 'test_challenge';
-
-        $result = $authCode->setCodeChallenge($challenge);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($challenge, $authCode->getCodeChallenge());
-    }
-
-    public function test_setCodeChallengeMethod_andGetCodeChallengeMethod(): void
-    {
-        $authCode = new AuthorizationCode();
-        $method = 'S256';
-
-        $result = $authCode->setCodeChallengeMethod($method);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($method, $authCode->getCodeChallengeMethod());
-    }
-
-    public function test_setUsed_andIsUsed(): void
-    {
-        $authCode = new AuthorizationCode();
-
-        $this->assertFalse($authCode->isUsed());
-
-        $result = $authCode->setUsed(true);
-
-        $this->assertSame($authCode, $result);
-        $this->assertTrue($authCode->isUsed());
-    }
-
-    public function test_setState_andGetState(): void
-    {
-        $authCode = new AuthorizationCode();
-        $state = 'random_state_value';
-
-        $result = $authCode->setState($state);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($state, $authCode->getState());
-    }
-
-    public function test_isExpired_returnsFalseForFutureDate(): void
-    {
-        $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTimeImmutable('+10 minutes'));
+        $authCode->setExpireTime(new \DateTimeImmutable('+10 minutes'));
 
         $this->assertFalse($authCode->isExpired());
     }
 
-    public function test_isExpired_returnsTrueForPastDate(): void
+    public function testIsExpiredReturnsTrueForPastDate(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTimeImmutable('-1 minute'));
+        $authCode->setExpireTime(new \DateTimeImmutable('-1 minute'));
 
         $this->assertTrue($authCode->isExpired());
     }
 
-    public function test_isValid_returnsTrueWhenNotExpiredAndNotUsed(): void
+    public function testIsValidReturnsTrueWhenNotExpiredAndNotUsed(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTimeImmutable('+10 minutes'));
+        $authCode->setExpireTime(new \DateTimeImmutable('+10 minutes'));
         $authCode->setUsed(false);
 
         $this->assertTrue($authCode->isValid());
     }
 
-    public function test_isValid_returnsFalseWhenExpired(): void
+    public function testIsValidReturnsFalseWhenExpired(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTimeImmutable('-1 minute'));
+        $authCode->setExpireTime(new \DateTimeImmutable('-1 minute'));
         $authCode->setUsed(false);
 
         $this->assertFalse($authCode->isValid());
     }
 
-    public function test_isValid_returnsFalseWhenUsed(): void
+    public function testIsValidReturnsFalseWhenUsed(): void
     {
         $authCode = new AuthorizationCode();
-        $authCode->setExpiresAt(new \DateTimeImmutable('+10 minutes'));
+        $authCode->setExpireTime(new \DateTimeImmutable('+10 minutes'));
         $authCode->setUsed(true);
 
         $this->assertFalse($authCode->isValid());
     }
 
-    public function test_verifyCodeVerifier_returnsTrueWhenNoChallengeSet(): void
+    public function testVerifyCodeVerifierReturnsTrueWhenNoChallengeSet(): void
     {
         $authCode = new AuthorizationCode();
         $authCode->setCodeChallenge(null);
@@ -183,7 +121,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertTrue($authCode->verifyCodeVerifier('any_verifier'));
     }
 
-    public function test_verifyCodeVerifier_returnsTrueForPlainMethodWithMatchingVerifier(): void
+    public function testVerifyCodeVerifierReturnsTrueForPlainMethodWithMatchingVerifier(): void
     {
         $authCode = new AuthorizationCode();
         $verifier = 'test_verifier';
@@ -193,7 +131,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertTrue($authCode->verifyCodeVerifier($verifier));
     }
 
-    public function test_verifyCodeVerifier_returnsFalseForPlainMethodWithNonMatchingVerifier(): void
+    public function testVerifyCodeVerifierReturnsFalseForPlainMethodWithNonMatchingVerifier(): void
     {
         $authCode = new AuthorizationCode();
         $authCode->setCodeChallenge('correct_verifier');
@@ -202,7 +140,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertFalse($authCode->verifyCodeVerifier('wrong_verifier'));
     }
 
-    public function test_verifyCodeVerifier_returnsTrueForS256MethodWithCorrectVerifier(): void
+    public function testVerifyCodeVerifierReturnsTrueForS256MethodWithCorrectVerifier(): void
     {
         $authCode = new AuthorizationCode();
         $verifier = 'test_verifier_string';
@@ -217,7 +155,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertTrue($authCode->verifyCodeVerifier($verifier));
     }
 
-    public function test_verifyCodeVerifier_returnsFalseForS256MethodWithIncorrectVerifier(): void
+    public function testVerifyCodeVerifierReturnsFalseForS256MethodWithIncorrectVerifier(): void
     {
         $authCode = new AuthorizationCode();
         $correctVerifier = 'correct_verifier';
@@ -232,7 +170,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertFalse($authCode->verifyCodeVerifier('wrong_verifier'));
     }
 
-    public function test_verifyCodeVerifier_returnsFalseForUnsupportedMethod(): void
+    public function testVerifyCodeVerifierReturnsFalseForUnsupportedMethod(): void
     {
         $authCode = new AuthorizationCode();
         $authCode->setCodeChallenge('test_challenge');
@@ -241,7 +179,7 @@ class AuthorizationCodeTest extends TestCase
         $this->assertFalse($authCode->verifyCodeVerifier('test_verifier'));
     }
 
-    public function test_create_createsAuthCodeWithAllParameters(): void
+    public function testCreateCreatesAuthCodeWithAllParameters(): void
     {
         $redirectUri = 'https://example.com/callback';
         $scopes = ['read', 'write'];
@@ -260,7 +198,6 @@ class AuthorizationCodeTest extends TestCase
             $state
         );
 
-        $this->assertInstanceOf(AuthorizationCode::class, $authCode);
         $this->assertSame($this->mockClient, $authCode->getClient());
         $this->assertSame($this->mockUser, $authCode->getUser());
         $this->assertSame($redirectUri, $authCode->getRedirectUri());
@@ -273,11 +210,11 @@ class AuthorizationCodeTest extends TestCase
 
         // 验证过期时间大约在15分钟后
         $expectedExpiry = new \DateTimeImmutable('+15 minutes');
-        $actualExpiry = $authCode->getExpiresAt();
+        $actualExpiry = $authCode->getExpireTime();
         $this->assertLessThan(60, abs($expectedExpiry->getTimestamp() - $actualExpiry->getTimestamp()));
     }
 
-    public function test_create_createsAuthCodeWithMinimalParameters(): void
+    public function testCreateCreatesAuthCodeWithMinimalParameters(): void
     {
         $redirectUri = 'https://example.com/callback';
 
@@ -287,7 +224,6 @@ class AuthorizationCodeTest extends TestCase
             $redirectUri
         );
 
-        $this->assertInstanceOf(AuthorizationCode::class, $authCode);
         $this->assertSame($this->mockClient, $authCode->getClient());
         $this->assertSame($this->mockUser, $authCode->getUser());
         $this->assertSame($redirectUri, $authCode->getRedirectUri());
@@ -299,11 +235,11 @@ class AuthorizationCodeTest extends TestCase
 
         // 验证默认过期时间为10分钟
         $expectedExpiry = new \DateTimeImmutable('+10 minutes');
-        $actualExpiry = $authCode->getExpiresAt();
+        $actualExpiry = $authCode->getExpireTime();
         $this->assertLessThan(60, abs($expectedExpiry->getTimestamp() - $actualExpiry->getTimestamp()));
     }
 
-    public function test_create_generatesUniqueCode(): void
+    public function testCreateGeneratesUniqueCode(): void
     {
         $authCode1 = AuthorizationCode::create(
             $this->mockClient,
@@ -320,40 +256,19 @@ class AuthorizationCodeTest extends TestCase
         $this->assertNotEquals($authCode1->getCode(), $authCode2->getCode());
     }
 
-    public function test_toString_returnsCode(): void
+    public function testToStringReturnsCode(): void
     {
         $authCode = new AuthorizationCode();
         $code = 'test_code_value';
         $authCode->setCode($code);
 
-        $this->assertSame($code, (string)$authCode);
+        $this->assertSame($code, (string) $authCode);
     }
 
-    public function test_toString_returnsEmptyStringWhenCodeEmpty(): void
+    public function testToStringReturnsEmptyStringWhenCodeEmpty(): void
     {
         $authCode = new AuthorizationCode();
 
-        $this->assertSame('', (string)$authCode);
-    }
-
-    public function test_setCreateTime_andGetCreateTime(): void
-    {
-        $authCode = new AuthorizationCode();
-        $time = new \DateTimeImmutable();
-
-        $result = $authCode->setCreateTime($time);
-
-        $this->assertSame($authCode, $result);
-        $this->assertSame($time, $authCode->getCreateTime());
-    }
-
-    public function test_setCreateTime_withNull(): void
-    {
-        $authCode = new AuthorizationCode();
-
-        $result = $authCode->setCreateTime(null);
-
-        $this->assertSame($authCode, $result);
-        $this->assertNull($authCode->getCreateTime());
+        $this->assertSame('', (string) $authCode);
     }
 }

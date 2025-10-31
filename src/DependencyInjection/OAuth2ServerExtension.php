@@ -2,19 +2,19 @@
 
 namespace Tourze\OAuth2ServerBundle\DependencyInjection;
 
-use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Extension\Extension;
-use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
+use Tourze\SymfonyDependencyServiceLoader\AutoExtension;
 
-class OAuth2ServerExtension extends Extension
+class OAuth2ServerExtension extends AutoExtension implements PrependExtensionInterface
 {
-    public function load(array $configs, ContainerBuilder $container): void
+    protected function getConfigDir(): string
     {
-        $loader = new YamlFileLoader(
-            $container,
-            new FileLocator(__DIR__ . '/../Resources/config')
-        );
-        $loader->load('services.yaml');
+        return __DIR__ . '/../Resources/config';
+    }
+
+    public function prepend(ContainerBuilder $container): void
+    {
+        // 预配置方法 - 目前无特殊配置需求
     }
 }

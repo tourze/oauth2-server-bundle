@@ -2,32 +2,36 @@
 
 namespace Tourze\OAuth2ServerBundle\Tests\Service;
 
-use PHPUnit\Framework\MockObject\MockObject;
-use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
-use Tourze\OAuth2ServerBundle\Repository\OAuth2ClientRepository;
 use Tourze\OAuth2ServerBundle\Service\OAuth2ClientService;
+use Tourze\PHPUnitSymfonyKernelTest\AbstractIntegrationTestCase;
 
 /**
- * OAuth2ClientService单元测试
+ * OAuth2ClientService集成测试
+ *
+ * @internal
  */
-class OAuth2ClientServiceTest extends TestCase
+#[CoversClass(OAuth2ClientService::class)]
+#[RunTestsInSeparateProcesses]
+final class OAuth2ClientServiceTest extends AbstractIntegrationTestCase
 {
-    private OAuth2ClientRepository&MockObject $mockRepository;
-    private UserInterface&MockObject $mockUser;
+    private UserInterface $testUser;
+
     private OAuth2ClientService $clientService;
 
-    protected function setUp(): void
+    protected function onSetUp(): void
     {
-        $this->mockRepository = $this->createMock(OAuth2ClientRepository::class);
-        $this->mockUser = $this->createMock(UserInterface::class);
-        $this->mockUser->method('getUserIdentifier')->willReturn('test@example.com');
-        
-        $this->clientService = new OAuth2ClientService($this->mockRepository);
+        // 创建测试用户
+        $this->testUser = $this->createNormalUser('test@example.com', 'password123');
+
+        // 从容器获取服务实例
+        $this->clientService = self::getService(OAuth2ClientService::class);
     }
 
-    public function test_createClient_withAllParameters(): void
+    public function testCreateClientWithAllParameters(): void
     {
         $name = 'Test Application';
         $redirectUris = ['https://example.com/callback'];
@@ -35,16 +39,8 @@ class OAuth2ClientServiceTest extends TestCase
         $description = 'Test application description';
         $scopes = ['read', 'write'];
 
-        $this->mockRepository->expects($this->once())
-            ->method('findByClientId')
-            ->willReturn(null); // 确保clientId唯一
-        
-        $this->mockRepository->expects($this->once())
-            ->method('save')
-            ->with($this->isInstanceOf(OAuth2Client::class));
-
         $client = $this->clientService->createClient(
-            $this->mockUser,
+            $this->testUser,
             $name,
             $redirectUris,
             $grantTypes,
@@ -53,8 +49,7 @@ class OAuth2ClientServiceTest extends TestCase
             $scopes
         );
 
-        $this->assertInstanceOf(OAuth2Client::class, $client);
-        $this->assertSame($this->mockUser, $client->getUser());
+        $this->assertSame($this->testUser, $client->getUser());
         $this->assertSame($name, $client->getName());
         $this->assertSame($redirectUris, $client->getRedirectUris());
         $this->assertSame($grantTypes, $client->getGrantTypes());
@@ -63,17 +58,17 @@ class OAuth2ClientServiceTest extends TestCase
         $this->assertSame($scopes, $client->getScopes());
         $this->assertNotEmpty($client->getClientId());
         $this->assertNotEmpty($client->getClientSecret());
-        $this->assertTrue(str_starts_with($client->getClientId(), 'client_'));
+        $this->assertStringStartsWith('client_', $client->getClientId());
+
+        // 验证实体已持久化
+        $this->assertEntityPersisted($client);
     }
 
-    public function test_createClient_withMinimalParameters(): void
+    public function testCreateClientWithMinimalParameters(): void
     {
         $name = 'Simple Client';
 
-        $this->mockRepository->method('findByClientId')->willReturn(null);
-        $this->mockRepository->expects($this->once())->method('save');
-
-        $client = $this->clientService->createClient($this->mockUser, $name);
+        $client = $this->clientService->createClient($this->testUser, $name);
 
         $this->assertSame($name, $client->getName());
         $this->assertSame([], $client->getRedirectUris());
@@ -81,288 +76,422 @@ class OAuth2ClientServiceTest extends TestCase
         $this->assertNull($client->getDescription());
         $this->assertTrue($client->isConfidential());
         $this->assertNull($client->getScopes());
+
+        // 验证实体已持久化
+        $this->assertEntityPersisted($client);
     }
 
-    public function test_createClient_generatesUniqueClientId(): void
+    public function testCreateClientGeneratesUniqueClientId(): void
     {
-        // 第一次查询返回已存在的客户端，第二次返回null
-        $this->mockRepository->expects($this->exactly(2))
-            ->method('findByClientId')
-            ->willReturnOnConsecutiveCalls(
-                new OAuth2Client(), // 第一次返回已存在的客户端
-                null // 第二次返回null，表示ID唯一
-            );
-        
-        $this->mockRepository->expects($this->once())->method('save');
+        // 创建第一个客户端
+        $client1 = $this->clientService->createClient($this->testUser, 'First Client');
+        $clientId1 = $client1->getClientId();
 
-        $client = $this->clientService->createClient($this->mockUser, 'Test Client');
-        
-        $this->assertNotEmpty($client->getClientId());
+        // 创建第二个客户端
+        $client2 = $this->clientService->createClient($this->testUser, 'Second Client');
+        $clientId2 = $client2->getClientId();
+
+        // 验证客户端ID是唯一的
+        $this->assertNotEmpty($clientId1);
+        $this->assertNotEmpty($clientId2);
+        $this->assertNotSame($clientId1, $clientId2);
+
+        // 验证两个实体都已持久化
+        $this->assertEntityPersisted($client1);
+        $this->assertEntityPersisted($client2);
     }
 
-    public function test_validateClient_withValidConfidentialClient(): void
+    public function testValidateClientWithValidConfidentialClient(): void
     {
-        $clientId = 'test_client';
-        $clientSecret = 'test_secret';
-        $hashedSecret = password_hash($clientSecret, PASSWORD_BCRYPT);
-        
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('isConfidential')->willReturn(true);
-        $mockClient->method('getClientSecret')->willReturn($hashedSecret);
+        // 创建一个机密客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Confidential Client',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            true  // confidential
+        );
 
-        $this->mockRepository->expects($this->once())
-            ->method('findByClientId')
-            ->with($clientId)
-            ->willReturn($mockClient);
+        $clientId = $client->getClientId();
+        // createClient返回时，entity中包含明文密钥（仅此一次机会获取）
+        $clientSecret = $client->getClientSecret();
 
+        // 确保明文密钥非空
+        $this->assertNotEmpty($clientSecret);
+
+        // 清除EntityManager，确保后续查询从数据库重新加载
+        self::getEntityManager()->clear();
+
+        // 验证客户端
         $result = $this->clientService->validateClient($clientId, $clientSecret);
 
-        $this->assertSame($mockClient, $result);
+        $this->assertInstanceOf(OAuth2Client::class, $result);
+        $this->assertSame($clientId, $result->getClientId());
     }
 
-    public function test_validateClient_withInvalidClientSecret(): void
+    public function testValidateClientWithInvalidClientSecret(): void
     {
-        $clientId = 'test_client';
-        $clientSecret = 'wrong_secret';
-        $hashedSecret = password_hash('correct_secret', PASSWORD_BCRYPT);
-        
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('isConfidential')->willReturn(true);
-        $mockClient->method('getClientSecret')->willReturn($hashedSecret);
+        // 创建一个机密客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Confidential Client',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            true  // confidential
+        );
 
-        $this->mockRepository->method('findByClientId')->willReturn($mockClient);
+        $clientId = $client->getClientId();
+        $wrongSecret = 'wrong_secret_456';
 
-        $result = $this->clientService->validateClient($clientId, $clientSecret);
+        // 清除EntityManager，确保后续查询从数据库重新加载
+        self::getEntityManager()->clear();
+
+        // 验证客户端（使用错误的密钥）
+        $result = $this->clientService->validateClient($clientId, $wrongSecret);
 
         $this->assertNull($result);
     }
 
-    public function test_validateClient_withPublicClient(): void
+    public function testValidateClientWithPublicClient(): void
     {
-        $clientId = 'public_client';
-        
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('isConfidential')->willReturn(false);
+        // 创建一个公共客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Public Client',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            false  // public client
+        );
 
-        $this->mockRepository->method('findByClientId')->willReturn($mockClient);
+        $clientId = $client->getClientId();
 
+        // 清除EntityManager，确保后续查询从数据库重新加载
+        self::getEntityManager()->clear();
+
+        // 验证公共客户端（无需密钥）
         $result = $this->clientService->validateClient($clientId);
 
-        $this->assertSame($mockClient, $result);
+        $this->assertInstanceOf(OAuth2Client::class, $result);
+        $this->assertSame($clientId, $result->getClientId());
     }
 
-    public function test_validateClient_withNonExistentClient(): void
+    public function testValidateClientWithNonExistentClient(): void
     {
-        $clientId = 'non_existent_client';
-
-        $this->mockRepository->method('findByClientId')->willReturn(null);
+        $clientId = 'non_existent_client_id';
 
         $result = $this->clientService->validateClient($clientId, 'any_secret');
 
         $this->assertNull($result);
     }
 
-    public function test_validateClient_confidentialClientWithoutSecret(): void
+    public function testValidateClientConfidentialClientWithoutSecret(): void
     {
-        $clientId = 'confidential_client';
-        
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('isConfidential')->willReturn(true);
+        // 创建一个机密客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Confidential Client',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            true  // confidential
+        );
 
-        $this->mockRepository->method('findByClientId')->willReturn($mockClient);
+        $clientId = $client->getClientId();
 
-        $result = $this->clientService->validateClient($clientId); // 没有提供secret
+        // 清除EntityManager，确保后续查询从数据库重新加载
+        self::getEntityManager()->clear();
+
+        // 验证机密客户端但不提供密钥
+        $result = $this->clientService->validateClient($clientId);
 
         $this->assertNull($result);
     }
 
-    public function test_verifyClientSecret_withCorrectSecret(): void
+    public function testVerifyClientSecretWithCorrectSecret(): void
     {
-        $plainSecret = 'test_secret';
-        $hashedSecret = password_hash($plainSecret, PASSWORD_BCRYPT);
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('getClientSecret')->willReturn($hashedSecret);
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Secret Verification',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            true
+        );
 
-        $result = $this->clientService->verifyClientSecret($mockClient, $plainSecret);
+        $clientId = $client->getClientId();
+        // createClient返回时，entity中包含明文密钥（仅此一次机会获取）
+        $plainSecret = $client->getClientSecret();
+
+        // 清除EntityManager并重新加载，以获取数据库中的哈希密钥
+        self::getEntityManager()->clear();
+        $reloadedClient = self::getEntityManager()->getRepository(OAuth2Client::class)->findOneBy(['clientId' => $clientId]);
+        $this->assertInstanceOf(OAuth2Client::class, $reloadedClient);
+
+        // 验证客户端密钥（使用重新加载的entity，其中包含哈希后的密钥）
+        $result = $this->clientService->verifyClientSecret($reloadedClient, $plainSecret);
 
         $this->assertTrue($result);
     }
 
-    public function test_verifyClientSecret_withIncorrectSecret(): void
+    public function testVerifyClientSecretWithIncorrectSecret(): void
     {
-        $plainSecret = 'wrong_secret';
-        $hashedSecret = password_hash('correct_secret', PASSWORD_BCRYPT);
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('getClientSecret')->willReturn($hashedSecret);
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Wrong Secret',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            true
+        );
 
-        $result = $this->clientService->verifyClientSecret($mockClient, $plainSecret);
+        $clientId = $client->getClientId();
+
+        // 清除EntityManager并重新加载，以获取数据库中的哈希密钥
+        self::getEntityManager()->clear();
+        $reloadedClient = self::getEntityManager()->getRepository(OAuth2Client::class)->findOneBy(['clientId' => $clientId]);
+        $this->assertInstanceOf(OAuth2Client::class, $reloadedClient);
+
+        $wrongSecret = 'completely_wrong_secret';
+
+        // 验证错误的密钥（使用重新加载的entity）
+        $result = $this->clientService->verifyClientSecret($reloadedClient, $wrongSecret);
 
         $this->assertFalse($result);
     }
 
-    public function test_validateRedirectUri_withExactMatch(): void
+    public function testValidateRedirectUriWithExactMatch(): void
     {
         $redirectUri = 'https://example.com/callback';
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('getRedirectUris')->willReturn([$redirectUri]);
 
-        $result = $this->clientService->validateRedirectUri($mockClient, $redirectUri);
+        // 创建具有特定重定向URI的客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Redirect URI',
+            [$redirectUri],
+            ['authorization_code']
+        );
+
+        // 验证精确匹配的URI
+        $result = $this->clientService->validateRedirectUri($client, $redirectUri);
 
         $this->assertTrue($result);
     }
 
-    public function test_validateRedirectUri_withSubpathMatch(): void
+    public function testValidateRedirectUriWithSubpathMatch(): void
     {
         $allowedUri = 'https://example.com';
         $requestedUri = 'https://example.com/callback';
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('getRedirectUris')->willReturn([$allowedUri]);
 
-        $result = $this->clientService->validateRedirectUri($mockClient, $requestedUri);
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Subpath URI',
+            [$allowedUri],
+            ['authorization_code']
+        );
+
+        // 验证子路径匹配
+        $result = $this->clientService->validateRedirectUri($client, $requestedUri);
 
         $this->assertTrue($result);
     }
 
-    public function test_validateRedirectUri_withNonMatchingUri(): void
+    public function testValidateRedirectUriWithNonMatchingUri(): void
     {
         $allowedUri = 'https://example.com/callback';
         $requestedUri = 'https://malicious.com/callback';
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('getRedirectUris')->willReturn([$allowedUri]);
 
-        $result = $this->clientService->validateRedirectUri($mockClient, $requestedUri);
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Non-matching URI',
+            [$allowedUri],
+            ['authorization_code']
+        );
+
+        // 验证不匹配的URI
+        $result = $this->clientService->validateRedirectUri($client, $requestedUri);
 
         $this->assertFalse($result);
     }
 
-    public function test_validateRedirectUri_withEmptyAllowedUris(): void
+    public function testValidateRedirectUriWithEmptyAllowedUris(): void
     {
         $requestedUri = 'https://example.com/callback';
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('getRedirectUris')->willReturn([]);
 
-        $result = $this->clientService->validateRedirectUri($mockClient, $requestedUri);
+        // 创建没有重定向URI的客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client with Empty URIs',
+            [],  // 空的重定向URI列表
+            ['client_credentials']
+        );
+
+        // 验证请求的URI
+        $result = $this->clientService->validateRedirectUri($client, $requestedUri);
 
         $this->assertFalse($result);
     }
 
-    public function test_supportsGrantType_returnsTrueForSupportedType(): void
+    public function testSupportsGrantTypeReturnsTrueForSupportedType(): void
     {
         $grantType = 'authorization_code';
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('supportsGrantType')->with($grantType)->willReturn(true);
 
-        $result = $this->clientService->supportsGrantType($mockClient, $grantType);
+        // 创建支持特定授权类型的客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Grant Type',
+            ['https://example.com/callback'],
+            [$grantType, 'refresh_token']
+        );
+
+        // 验证支持的授权类型
+        $result = $this->clientService->supportsGrantType($client, $grantType);
 
         $this->assertTrue($result);
     }
 
-    public function test_supportsGrantType_returnsFalseForUnsupportedType(): void
+    public function testSupportsGrantTypeReturnsFalseForUnsupportedType(): void
     {
         $grantType = 'password';
-        
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->method('supportsGrantType')->with($grantType)->willReturn(false);
 
-        $result = $this->clientService->supportsGrantType($mockClient, $grantType);
+        // 创建不支持password授权类型的客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Unsupported Grant',
+            ['https://example.com/callback'],
+            ['authorization_code']  // 只支持authorization_code
+        );
+
+        // 验证不支持的授权类型
+        $result = $this->clientService->supportsGrantType($client, $grantType);
 
         $this->assertFalse($result);
     }
 
-    public function test_updateClient_savesClient(): void
+    public function testUpdateClientSavesClient(): void
     {
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Original Name',
+            ['https://example.com/callback'],
+            ['authorization_code']
+        );
 
-        $this->mockRepository->expects($this->once())
-            ->method('save')
-            ->with($mockClient);
+        // 修改客户端属性
+        $newName = 'Updated Name';
+        $client->setName($newName);
 
-        $this->clientService->updateClient($mockClient);
+        // 更新客户端
+        $this->clientService->updateClient($client);
+
+        // 验证更新已保存
+        $this->assertEntityPersisted($client);
+        $this->assertSame($newName, $client->getName());
     }
 
-    public function test_regenerateClientSecret_generatesNewSecret(): void
+    public function testRegenerateClientSecretGeneratesNewSecret(): void
     {
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->expects($this->once())
-            ->method('setClientSecret')
-            ->with($this->isType('string'));
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Secret Regeneration',
+            ['https://example.com/callback'],
+            ['authorization_code'],
+            null,
+            true
+        );
 
-        $this->mockRepository->expects($this->once())->method('save');
+        $oldSecret = $client->getClientSecret();
 
-        $newSecret = $this->clientService->regenerateClientSecret($mockClient);
+        // 重新生成密钥
+        $newSecret = $this->clientService->regenerateClientSecret($client);
 
+        // 验证新密钥
         $this->assertNotEmpty($newSecret);
+        $this->assertNotSame($oldSecret, $client->getClientSecret());
+
+        // 验证实体已更新并持久化
+        $this->assertEntityPersisted($client);
     }
 
-    public function test_disableClient_setsEnabledToFalse(): void
+    public function testDisableClientSetsEnabledToFalse(): void
     {
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->expects($this->once())
-            ->method('setEnabled')
-            ->with(false);
+        // 创建启用的客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Disable',
+            ['https://example.com/callback'],
+            ['authorization_code']
+        );
 
-        $this->mockRepository->expects($this->once())->method('save');
+        // 禁用客户端
+        $this->clientService->disableClient($client);
 
-        $this->clientService->disableClient($mockClient);
+        // 验证客户端已禁用
+        $this->assertFalse($client->isEnabled());
+        $this->assertEntityPersisted($client);
     }
 
-    public function test_enableClient_setsEnabledToTrue(): void
+    public function testEnableClientSetsEnabledToTrue(): void
     {
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
-        $mockClient->expects($this->once())
-            ->method('setEnabled')
-            ->with(true);
+        // 创建禁用的客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Enable',
+            ['https://example.com/callback'],
+            ['authorization_code']
+        );
 
-        $this->mockRepository->expects($this->once())->method('save');
+        // 先禁用
+        $this->clientService->disableClient($client);
+        $this->assertFalse($client->isEnabled());
 
-        $this->clientService->enableClient($mockClient);
+        // 再启用
+        $this->clientService->enableClient($client);
+
+        // 验证客户端已启用
+        $this->assertTrue($client->isEnabled());
+        $this->assertEntityPersisted($client);
     }
 
-    public function test_deleteClient_removesClient(): void
+    public function testDeleteClientRemovesClient(): void
     {
-        /** @var OAuth2Client&MockObject $mockClient */
-        $mockClient = $this->createMock(OAuth2Client::class);
+        // 创建客户端
+        $client = $this->clientService->createClient(
+            $this->testUser,
+            'Test Client for Deletion',
+            ['https://example.com/callback'],
+            ['authorization_code']
+        );
 
-        $this->mockRepository->expects($this->once())
-            ->method('remove')
-            ->with($mockClient);
+        $clientId = $client->getId();
 
-        $this->clientService->deleteClient($mockClient);
+        // 删除客户端
+        $this->clientService->deleteClient($client);
+
+        // 验证客户端已删除
+        $this->assertEntityNotExists(OAuth2Client::class, $clientId);
     }
 
-    public function test_getClientsByUser_returnsUserClients(): void
+    public function testGetClientsByUserReturnsUserClients(): void
     {
-        $expectedClients = [
-            $this->createMock(OAuth2Client::class),
-            $this->createMock(OAuth2Client::class),
-        ];
+        // 创建多个客户端
+        $client1 = $this->clientService->createClient($this->testUser, 'Client 1');
+        $client2 = $this->clientService->createClient($this->testUser, 'Client 2');
 
-        $this->mockRepository->expects($this->once())
-            ->method('findByUser')
-            ->with($this->mockUser)
-            ->willReturn($expectedClients);
+        // 获取用户的所有客户端
+        $clients = $this->clientService->getClientsByUser($this->testUser);
 
-        $result = $this->clientService->getClientsByUser($this->mockUser);
-
-        $this->assertSame($expectedClients, $result);
+        // 验证返回的客户端列表
+        $this->assertCount(2, $clients);
+        $this->assertContains($client1, $clients);
+        $this->assertContains($client2, $clients);
     }
-} 
+}

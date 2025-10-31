@@ -16,7 +16,7 @@ use Tourze\OAuth2ServerBundle\Service\OAuth2ClientService;
 /**
  * 切换OAuth2客户端状态控制器
  */
-class ToggleStatusController extends AbstractController
+final class ToggleStatusController extends AbstractController
 {
     public function __construct(
         private readonly OAuth2ClientService $clientService,
@@ -27,9 +27,9 @@ class ToggleStatusController extends AbstractController
     #[Route(path: '/admin/oauth2-client/{entityId}/toggle-status', name: 'admin_oauth2_client_toggle_status', methods: ['POST'])]
     public function __invoke(AdminContext $context, Request $request): RedirectResponse
     {
-        /** @var OAuth2Client $client */
         $client = $context->getEntity()->getInstance();
-        
+        assert($client instanceof OAuth2Client);
+
         try {
             if ($client->isEnabled()) {
                 $this->clientService->disableClient($client);
@@ -53,7 +53,8 @@ class ToggleStatusController extends AbstractController
         $url = $this->adminUrlGenerator
             ->setController(OAuth2ClientCrudController::class)
             ->setAction(Action::INDEX)
-            ->generateUrl();
+            ->generateUrl()
+        ;
 
         return new RedirectResponse($url);
     }

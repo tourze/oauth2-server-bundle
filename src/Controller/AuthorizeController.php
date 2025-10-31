@@ -18,11 +18,11 @@ use Tourze\OAuth2ServerBundle\Service\AuthorizationService;
  *
  * @see https://tools.ietf.org/html/rfc6749#section-3.1
  */
-class AuthorizeController extends AbstractController
+final class AuthorizeController extends AbstractController
 {
     public function __construct(
         private readonly AuthorizationService $authorizationService,
-        private readonly AccessLogService $accessLogService
+        private readonly AccessLogService $accessLogService,
     ) {
     }
 
@@ -38,7 +38,7 @@ class AuthorizeController extends AbstractController
             $authRequest = $this->validateAuthorizationParameters($request);
             $client = $authRequest['client'];
 
-            if ($user === null) {
+            if (null === $user) {
                 return $this->redirectToLogin($request);
             }
 
@@ -49,58 +49,83 @@ class AuthorizeController extends AbstractController
             }
 
             $this->logSuccess('authorize', $request, $startTime, $client, $user);
-            return $response;
 
+            return $response;
         } catch (OAuth2Exception $e) {
             $this->logError('authorize', $request, $e, $startTime);
+
             return $this->handleAuthorizationError($e, $request);
         }
     }
 
     /**
      * 验证授权请求参数
+     *
+     * @return array{client: OAuth2Client, response_type: string, redirect_uri: string, scopes: array<string>|null, state: string|null, code_challenge: string|null, code_challenge_method: string|null}
      */
     private function validateAuthorizationParameters(Request $request): array
     {
         $clientId = $request->query->get('client_id');
         $responseType = $request->query->get('response_type');
         $redirectUri = $request->query->get('redirect_uri');
-        $scopes = $request->query->get('scope') ? explode(' ', $request->query->get('scope')) : null;
+        $scopeString = $request->query->get('scope');
         $state = $request->query->get('state');
         $codeChallenge = $request->query->get('code_challenge');
         $codeChallengeMethod = $request->query->get('code_challenge_method');
 
+        // 验证必需参数并确保类型安全
+        if (null === $clientId || null === $responseType || null === $redirectUri) {
+            throw new OAuth2Exception('invalid_request', 'Missing required parameters: client_id, response_type, and redirect_uri are required');
+        }
+
+        // 类型转换确保参数为字符串类型
+        $clientIdString = (string) $clientId;
+        $responseTypeString = (string) $responseType;
+        $redirectUriString = (string) $redirectUri;
+        $stateString = null !== $state ? (string) $state : null;
+        $codeChallengeString = null !== $codeChallenge ? (string) $codeChallenge : null;
+        $codeChallengeMethodString = null !== $codeChallengeMethod ? (string) $codeChallengeMethod : null;
+
+        // 处理scope参数
+        $scopes = null;
+        if (null !== $scopeString) {
+            $scopeStringValue = (string) $scopeString;
+            $scopes = '' !== $scopeStringValue ? explode(' ', $scopeStringValue) : null;
+        }
+
         $client = $this->authorizationService->validateAuthorizationRequest(
-            $clientId,
-            $responseType,
-            $redirectUri,
+            $clientIdString,
+            $responseTypeString,
+            $redirectUriString,
             $scopes,
-            $state,
-            $codeChallenge,
-            $codeChallengeMethod
+            $stateString,
+            $codeChallengeString,
+            $codeChallengeMethodString
         );
 
         return [
             'client' => $client,
-            'response_type' => $responseType,
-            'redirect_uri' => $redirectUri,
+            'response_type' => $responseTypeString,
+            'redirect_uri' => $redirectUriString,
             'scopes' => $scopes,
-            'state' => $state,
-            'code_challenge' => $codeChallenge,
-            'code_challenge_method' => $codeChallengeMethod,
+            'state' => $stateString,
+            'code_challenge' => $codeChallengeString,
+            'code_challenge_method' => $codeChallengeMethodString,
         ];
     }
 
     /**
      * 处理用户授权决定
+     *
+     * @param array{client: OAuth2Client, response_type: string, redirect_uri: string, scopes: array<string>|null, state: string|null, code_challenge: string|null, code_challenge_method: string|null} $authRequest
      */
     private function processUserAuthorization(Request $request, UserInterface $user, array $authRequest): Response
     {
-        if ($request->request->get('authorize') !== 'yes') {
+        if ('yes' !== $request->request->get('authorize')) {
             return $this->redirectWithError(
-                $authRequest['redirect_uri'], 
-                'access_denied', 
-                'User denied authorization', 
+                $authRequest['redirect_uri'],
+                'access_denied',
+                'User denied authorization',
                 $authRequest['state']
             );
         }
@@ -116,14 +141,16 @@ class AuthorizeController extends AbstractController
         );
 
         return $this->redirectWithAuthorizationCode(
-            $authRequest['redirect_uri'], 
-            $authCode->getCode(), 
+            $authRequest['redirect_uri'],
+            $authCode->getCode(),
             $authRequest['state']
         );
     }
 
     /**
      * 渲染授权页面
+     *
+     * @param array{client: OAuth2Client, response_type: string, redirect_uri: string, scopes: array<string>|null, state: string|null, code_challenge: string|null, code_challenge_method: string|null} $authRequest
      */
     private function renderAuthorizationPage(array $authRequest, UserInterface $user): Response
     {
@@ -142,7 +169,7 @@ class AuthorizeController extends AbstractController
     private function redirectToLogin(Request $request): Response
     {
         return $this->redirectToRoute('app_login', [
-            'redirect_uri' => $request->getUri()
+            'redirect_uri' => $request->getUri(),
         ]);
     }
 
@@ -152,11 +179,12 @@ class AuthorizeController extends AbstractController
     private function redirectWithAuthorizationCode(string $redirectUri, string $code, ?string $state): Response
     {
         $params = ['code' => $code];
-        if ($state !== null) {
+        if (null !== $state) {
             $params['state'] = $state;
         }
 
         $redirectUrl = $redirectUri . '?' . http_build_query($params);
+
         return $this->redirect($redirectUrl);
     }
 
@@ -170,11 +198,12 @@ class AuthorizeController extends AbstractController
             'error_description' => $errorDescription,
         ];
 
-        if ($state !== null) {
+        if (null !== $state) {
             $params['state'] = $state;
         }
 
         $redirectUrl = $redirectUri . '?' . http_build_query($params);
+
         return $this->redirect($redirectUrl);
     }
 
@@ -186,8 +215,13 @@ class AuthorizeController extends AbstractController
         $redirectUri = $request->query->get('redirect_uri');
         $state = $request->query->get('state');
 
-        if ($redirectUri && $this->isValidRedirectUri($redirectUri)) {
-            return $this->redirectWithError($redirectUri, $e->getError(), $e->getErrorDescription(), $state);
+        if (null !== $redirectUri) {
+            $redirectUriString = (string) $redirectUri;
+            if ($this->isValidRedirectUri($redirectUriString)) {
+                $stateString = null !== $state ? (string) $state : null;
+
+                return $this->redirectWithError($redirectUriString, $e->getError(), $e->getErrorDescription(), $stateString);
+            }
         }
 
         return $this->render('@OAuth2Server/error.html.twig', [
@@ -200,11 +234,11 @@ class AuthorizeController extends AbstractController
      * 记录成功访问日志
      */
     private function logSuccess(
-        string $endpoint, 
-        Request $request, 
-        float $startTime, 
-        ?OAuth2Client $client = null, 
-        ?UserInterface $user = null
+        string $endpoint,
+        Request $request,
+        float $startTime,
+        ?OAuth2Client $client = null,
+        ?UserInterface $user = null,
     ): void {
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
         $this->accessLogService->logSuccess($endpoint, $request, $client, $user, $responseTime);
@@ -214,12 +248,12 @@ class AuthorizeController extends AbstractController
      * 记录错误访问日志
      */
     private function logError(
-        string $endpoint, 
-        Request $request, 
-        OAuth2Exception $exception, 
-        float $startTime, 
-        ?OAuth2Client $client = null, 
-        ?UserInterface $user = null
+        string $endpoint,
+        Request $request,
+        OAuth2Exception $exception,
+        float $startTime,
+        ?OAuth2Client $client = null,
+        ?UserInterface $user = null,
     ): void {
         $responseTime = (int) ((microtime(true) - $startTime) * 1000);
         $this->accessLogService->logError(
@@ -238,6 +272,6 @@ class AuthorizeController extends AbstractController
      */
     private function isValidRedirectUri(string $uri): bool
     {
-        return filter_var($uri, FILTER_VALIDATE_URL) !== false;
+        return false !== filter_var($uri, FILTER_VALIDATE_URL);
     }
 }

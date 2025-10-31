@@ -4,117 +4,77 @@ namespace Tourze\OAuth2ServerBundle\DataFixtures;
 
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
-use Symfony\Component\Security\Core\User\UserInterface;
-use Tourze\DoctrineResolveTargetEntityBundle\Service\ResolveTargetEntityService;
-use Tourze\OAuth2ServerBundle\Service\OAuth2ClientService;
+use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
 
-/**
- * OAuth2客户端测试数据
- */
 class OAuth2ClientFixtures extends Fixture
 {
-    public function __construct(
-        private readonly OAuth2ClientService $clientService,
-        private readonly ResolveTargetEntityService $resolveTargetEntityService,
-    ) {}
-
-    /**
-     * 创建模拟用户
-     */
-    private function createMockUser(): UserInterface
+    public function __construct()
     {
-        return $this->getReference('user-1', $this->resolveTargetEntityService->findEntityClass(UserInterface::class));
     }
 
     public function load(ObjectManager $manager): void
     {
-        $user = $this->createMockUser();
+        // 由于 Doctrine 的架构限制，无法在 DataFixtures 中使用匿名类
+        // 实际的 User 实体应该由用户应用提供，这里我们只创建 OAuth2Client
+        // 客户端可以在运行时关联到真实的 User 实体
 
-        // 1. 创建基础Web应用客户端
-        $webClient = $this->clientService->createClient(
-            user: $user,
-            name: 'Test Web Application',
-            redirectUris: [
-                'http://localhost:3000/callback',
-                'https://example.com/oauth/callback'
+        // 创建一些测试用的 OAuth2 客户端
+        $clients = [
+            [
+                'client_id' => 'test_client_1',
+                'client_secret' => 'secret_1',
+                'name' => 'Test Web Application',
+                'redirect_uris' => ['https://localhost:8000/callback', 'https://localhost:8000/auth'],
+                'grant_types' => ['authorization_code', 'refresh_token'],
             ],
-            grantTypes: ['authorization_code', 'refresh_token'],
-            description: '测试Web应用，支持授权码模式',
-            scopes: ['read', 'write', 'admin']
-        );
-        $manager->persist($webClient);
-
-        // 2. 创建API客户端（仅客户端凭证）
-        $apiClient = $this->clientService->createClient(
-            user: $user,
-            name: 'API Service Client',
-            redirectUris: [],
-            grantTypes: ['client_credentials'],
-            description: '后端API服务客户端，仅支持客户端凭证授权',
-            scopes: ['api:read', 'api:write']
-        );
-        $manager->persist($apiClient);
-
-        // 3. 创建移动应用客户端（支持PKCE）
-        $mobileClient = $this->clientService->createClient(
-            user: $user,
-            name: 'Mobile App Client',
-            redirectUris: [
-                'myapp://oauth/callback',
-                'https://app.example.com/callback'
+            [
+                'client_id' => 'mobile_app_1',
+                'client_secret' => 'mobile_secret_1',
+                'name' => 'Mobile Application',
+                'redirect_uris' => ['com.example.app://callback'],
+                'grant_types' => ['authorization_code'],
             ],
-            grantTypes: ['authorization_code', 'refresh_token'],
-            description: '移动应用客户端，支持PKCE和授权码模式',
-            scopes: ['profile', 'email', 'offline_access']
-        );
-
-        // 移动应用设置为公开客户端（不需要客户端密钥验证）
-        $mobileClient->setConfidential(false);
-        $manager->persist($mobileClient);
-
-        // 4. 创建第三方集成客户端
-        $integrationClient = $this->clientService->createClient(
-            user: $user,
-            name: 'Third Party Integration',
-            redirectUris: [
-                'https://partner.example.com/webhook',
-                'https://integration.example.com/oauth/return'
+            [
+                'client_id' => 'api_client_1',
+                'client_secret' => 'api_secret_1',
+                'name' => 'API Service Client',
+                'redirect_uris' => ['https://localhost:8000/api/callback'],
+                'grant_types' => ['client_credentials'],
             ],
-            grantTypes: ['authorization_code', 'client_credentials', 'refresh_token'],
-            description: '第三方系统集成客户端，支持多种授权方式',
-            scopes: ['integration:read', 'integration:write', 'webhooks']
-        );
+        ];
 
-        // 设置较长的令牌有效期
-        $integrationClient->setAccessTokenLifetime(7200); // 2小时
-        $integrationClient->setRefreshTokenLifetime(2592000); // 30天
-        $manager->persist($integrationClient);
+        foreach ($clients as $i => $clientData) {
+            $client = new OAuth2Client();
+            $client->setClientId($clientData['client_id']);
+            $client->setClientSecret($clientData['client_secret']);
+            $client->setName($clientData['name']);
+            // User 字段设为 null，实际应用中应该关联到真实的 User 实体
+            $client->setUser(null);
+            $client->setRedirectUris($clientData['redirect_uris']);
+            $client->setGrantTypes($clientData['grant_types']);
 
-        // 5. 创建开发测试客户端
-        $devClient = $this->clientService->createClient(
-            user: $user,
-            name: 'Development Test Client',
-            redirectUris: [
-                'http://localhost:8000/debug/oauth',
-                'http://127.0.0.1:3000/callback',
-                'postman://oauth/callback'
-            ],
-            grantTypes: ['authorization_code', 'client_credentials', 'refresh_token'],
-            description: '开发环境测试客户端，支持所有授权类型',
-            scopes: ['*'] // 所有权限
-        );
+            $manager->persist($client);
 
-        // 开发客户端设置较短的令牌有效期便于测试
-        $devClient->setAccessTokenLifetime(1800); // 30分钟
-        $manager->persist($devClient);
+            // 添加引用，方便其他 fixtures 使用
+            $this->addReference('oauth2_client_' . $i, $client);
+        }
+
+        // 创建更多随机客户端用于测试
+        for ($i = 4; $i <= 15; ++$i) {
+            $client = new OAuth2Client();
+            $client->setClientId("auto_client_{$i}");
+            $client->setClientSecret("auto_secret_{$i}");
+            $client->setName("Auto Generated Client {$i}");
+            // User 字段设为 null，实际应用中应该关联到真实的 User 实体
+            $client->setUser(null);
+            $client->setRedirectUris(['https://localhost:8000/callback']);
+            $client->setGrantTypes(['authorization_code']);
+
+            $manager->persist($client);
+
+            $this->addReference('oauth2_client_' . $i, $client);
+        }
 
         $manager->flush();
-
-        // 设置引用，供其他Fixture使用
-        $this->addReference('oauth2-client-web', $webClient);
-        $this->addReference('oauth2-client-api', $apiClient);
-        $this->addReference('oauth2-client-mobile', $mobileClient);
-        $this->addReference('oauth2-client-integration', $integrationClient);
-        $this->addReference('oauth2-client-dev', $devClient);
     }
 }
