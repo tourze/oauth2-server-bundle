@@ -30,7 +30,7 @@
     "tourze/biz-user-bundle": "0.0.*",
     "tourze/bundle-dependency": "1.*",
     "tourze/doctrine-indexed-bundle": "0.0.*",
-    "tourze/doctrine-resolve-target-entity-bundle": "0.0.*",
+    "tourze/doctrine-resolve-target-entity-bundle": "1.*",
     "tourze/doctrine-timestamp-bundle": "0.0.*",
     "tourze/easy-admin-menu-bundle": "0.1.*",
     "tourze/symfony-dependency-service-loader": "1.*",
