@@ -21,7 +21,7 @@ class OAuth2AccessLog implements \Stringable
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
-    private ?int $id = null; // @phpstan-ignore-line Doctrine sets this via reflection
+    private ?int $id = null;
 
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 50, options: ['comment' => '端点名称'])]

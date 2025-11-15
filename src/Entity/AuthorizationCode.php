@@ -25,7 +25,7 @@ class AuthorizationCode implements \Stringable
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: Types::INTEGER, options: ['comment' => 'ID'])]
-    private ?int $id = null; // @phpstan-ignore-line Doctrine sets this via reflection
+    private ?int $id = null;
 
     #[IndexColumn]
     #[ORM\Column(type: Types::STRING, length: 128, unique: true, options: ['comment' => '授权码'])]
