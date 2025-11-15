@@ -90,7 +90,6 @@ final class OAuth2ClientCrudController extends AbstractCrudController
 
         yield AssociationField::new('user', '关联用户')
             ->setRequired(true)
-            ->autocomplete()
             ->setHelp('该客户端归属的系统用户')
         ;
 

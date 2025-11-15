@@ -98,7 +98,6 @@ final class AuthorizationCodeCrudController extends AbstractCrudController
 
         yield AssociationField::new('user', '授权用户')
             ->setRequired(true)
-            ->autocomplete()
             ->setHelp('进行授权的用户')
         ;
     }

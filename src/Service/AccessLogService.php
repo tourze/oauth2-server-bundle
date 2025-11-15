@@ -356,14 +356,21 @@ class AccessLogService
      * 从数组中安全提取数组值
      *
      * @param array<string, mixed> $data
-     * @return array<mixed, mixed>|null
+     * @return array<string, mixed>|null
      */
     private function extractArrayValue(array $data, string $key): ?array
     {
-        if (!isset($data[$key]) || !is_array($data[$key])) {
+        if (!isset($data[$key])) {
             return null;
         }
 
-        return $data[$key];
+        $value = $data[$key];
+
+        if (!is_array($value)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $value */
+        return $value;
     }
 }
