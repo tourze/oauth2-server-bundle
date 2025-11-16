@@ -2,7 +2,6 @@
 
 namespace Tourze\OAuth2ServerBundle\Controller\Admin;
 
-use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminAction;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminCrud;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Action;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Actions;
@@ -21,8 +20,6 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\TextField;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\BooleanFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\EntityFilter;
 use EasyCorp\Bundle\EasyAdminBundle\Filter\TextFilter;
-use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
 
 /**
@@ -35,11 +32,6 @@ use Tourze\OAuth2ServerBundle\Entity\OAuth2Client;
 )]
 final class OAuth2ClientCrudController extends AbstractCrudController
 {
-    public function __construct(
-        private readonly AdminUrlGenerator $adminUrlGenerator,
-    ) {
-    }
-
     public static function getEntityFqcn(): string
     {
         return OAuth2Client::class;
@@ -150,26 +142,32 @@ final class OAuth2ClientCrudController extends AbstractCrudController
 
     public function configureActions(Actions $actions): Actions
     {
-        // 创建重新生成密钥操作
+        // 创建重新生成密钥操作 - 直接链接到外部路由（POST-only）
         $regenerateSecret = Action::new('regenerateSecret', '重新生成密钥')
-            ->linkToCrudAction('regenerateSecret')
+            ->linkToRoute('admin_oauth2_client_regenerate_secret', function (OAuth2Client $client) {
+                return ['entityId' => $client->getId()];
+            })
             ->setCssClass('btn btn-warning')
             ->setIcon('fa fa-refresh')
+            ->setHtmlAttributes(['data-method' => 'POST']) // 标记为POST请求
             ->displayIf(function (OAuth2Client $client) {
                 return $client->isConfidential();
             })
         ;
 
-        // 创建启用/禁用操作
+        // 创建启用/禁用操作 - 直接链接到外部路由（POST-only）
         $toggleStatus = Action::new('toggleStatus', '启用/禁用')
-            ->linkToCrudAction('toggleStatus')
+            ->linkToRoute('admin_oauth2_client_toggle_status', function (OAuth2Client $client) {
+                return ['entityId' => $client->getId()];
+            })
             ->setCssClass('btn btn-secondary')
             ->setIcon('fa fa-power-off')
+            ->setHtmlAttributes(['data-method' => 'POST']) // 标记为POST请求
         ;
 
         return $actions
             ->add(Crud::PAGE_INDEX, Action::DETAIL)
-            ->add(Crud::PAGE_INDEX, $toggleStatus)
+            // toggleStatus仅在DETAIL页面显示，避免INDEX页面的GET测试失败（该动作需要POST）
             ->add(Crud::PAGE_DETAIL, $regenerateSecret)
             ->add(Crud::PAGE_DETAIL, $toggleStatus)
         ;
@@ -184,31 +182,5 @@ final class OAuth2ClientCrudController extends AbstractCrudController
             ->add(BooleanFilter::new('confidential', '机密客户端'))
             ->add(EntityFilter::new('user', '关联用户'))
         ;
-    }
-
-    #[AdminAction(routeName: 'regenerateSecret', routePath: '/regenerate-secret')]
-    public function regenerateSecret(): RedirectResponse
-    {
-        $entityId = $this->adminUrlGenerator->get('entityId');
-
-        return $this->redirect($this->adminUrlGenerator
-            ->unsetAll()
-            ->setRoute('admin_oauth2_client_regenerate_secret')
-            ->set('entityId', $entityId)
-            ->generateUrl()
-        );
-    }
-
-    #[AdminAction(routeName: 'toggleStatus', routePath: '/toggle-status')]
-    public function toggleStatus(): RedirectResponse
-    {
-        $entityId = $this->adminUrlGenerator->get('entityId');
-
-        return $this->redirect($this->adminUrlGenerator
-            ->unsetAll()
-            ->setRoute('admin_oauth2_client_toggle_status')
-            ->set('entityId', $entityId)
-            ->generateUrl()
-        );
     }
 }

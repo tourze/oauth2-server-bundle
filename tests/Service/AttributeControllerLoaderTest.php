@@ -32,7 +32,8 @@ final class AttributeControllerLoaderTest extends AbstractIntegrationTestCase
     {
         $result = $this->loader->autoload();
 
-        self::assertCount(2, $result->all());
+        // 4个控制器: AuthorizeController, TokenController, RegenerateSecretController, ToggleStatusController
+        self::assertCount(4, $result->all());
     }
 
     public function testLoadCallsAutoload(): void
